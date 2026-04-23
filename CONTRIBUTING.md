@@ -6,7 +6,7 @@ guidelines and information for contributors.
 ## Reporting Bugs
 
 Please report bugs by opening an issue at:
-https://github.com/roli-lpci/quick-gate-js/issues
+https://github.com/hermes-labs-ai/quick-gate-js/issues
 
 Include the following in your bug report:
 - Quick Gate version (`quick-gate --version`)
@@ -33,7 +33,7 @@ Include the following in your bug report:
 ## Development Setup
 
 ```bash
-git clone https://github.com/roli-lpci/quick-gate-js.git
+git clone https://github.com/hermes-labs-ai/quick-gate-js.git
 cd quick-gate-js
 npm install
 npm test

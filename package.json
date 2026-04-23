@@ -18,13 +18,13 @@
   },
   "license": "Apache-2.0",
   "author": "Hermes Labs <lpcisystems@gmail.com> (https://hermes-labs.ai)",
-  "homepage": "https://github.com/roli-lpci/quick-gate-js",
+  "homepage": "https://github.com/hermes-labs-ai/quick-gate-js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/roli-lpci/quick-gate-js.git"
+    "url": "git+https://github.com/hermes-labs-ai/quick-gate-js.git"
   },
   "bugs": {
-    "url": "https://github.com/roli-lpci/quick-gate-js/issues"
+    "url": "https://github.com/hermes-labs-ai/quick-gate-js/issues"
   },
   "keywords": [
     "quality-gate",
