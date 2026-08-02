@@ -2,7 +2,10 @@
 
 quick-gate-js is a deterministic JS/TS quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one fail-fast result, with bounded auto-repair and structured escalation evidence.
 
-> **Repo `quick-gate-js`, npm package `quick-gate`.** The repository is named `quick-gate-js`; it publishes to npm as the package `quick-gate`, so install it with `npm install -g quick-gate`.
+> **Repo `quick-gate-js`, npm package `quick-gate`.** The npm release and the
+> public source currently expose different mode names. The pinned npm command
+> below installs the released `canary|full` CLI. Install from public source only
+> if you need the newer `quick|full` CLI before its next registry release.
 
 JavaScript and TypeScript CI failures are noisy, tool-specific, and expensive to triage when ESLint, TypeScript, build steps, and Lighthouse all fail in different ways. Quick Gate turns those checks into one deterministic JS/TS quality gate with bounded auto-repair and structured escalation evidence.
 
@@ -12,7 +15,7 @@ JavaScript and TypeScript CI failures are noisy, tool-specific, and expensive to
 - "If repair cannot finish, I want a clean escalation artifact that an engineer or agent can actually use."
 
 ```bash
-npm install -g quick-gate
+npm install -g quick-gate@0.2.1
 ```
 
 ```bash
@@ -20,10 +23,10 @@ quick-gate --help
 ```
 
 ```text
-Quick Gate v0.2.2
+Quick Gate v0.2.1
 
 Commands:
-  quick-gate run --mode quick|full --changed-files <path>
+  quick-gate run --mode canary|full --changed-files <path>
   quick-gate summarize --input .quick-gate/failures.json
   quick-gate repair --input .quick-gate/failures.json [--max-attempts 3] [--deterministic-only]
 ```
@@ -49,12 +52,14 @@ Deterministic quality gate CLI for JavaScript and TypeScript projects with bound
 
 Requires **Node.js >= 18** and a project with dependencies installed (`npm ci`).
 
+### npm release (0.2.1)
+
 ```bash
 # From your project directory:
-npx quick-gate run --mode quick --changed-files <path>
+npx quick-gate@0.2.1 run --mode canary --changed-files <path>
 
 # Or install globally:
-npm install -g quick-gate
+npm install -g quick-gate@0.2.1
 quick-gate --help
 ```
 
@@ -62,6 +67,16 @@ Create a changed-files list (newline-delimited or JSON array):
 
 ```bash
 echo "app/page.tsx" > /tmp/changed.txt
+quick-gate run --mode canary --changed-files /tmp/changed.txt
+```
+
+### Current public source
+
+The public source has renamed `canary` mode to `quick`; until that change is
+published to npm, install it explicitly from GitHub:
+
+```bash
+npm install -g "github:hermes-labs-ai/quick-gate-js"
 quick-gate run --mode quick --changed-files /tmp/changed.txt
 ```
 
