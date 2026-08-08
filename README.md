@@ -13,7 +13,7 @@ JavaScript and TypeScript CI failures are noisy, tool-specific, and expensive to
 - "If repair cannot finish, I want a clean escalation artifact that an engineer or agent can actually use."
 
 ```bash
-npm install -g quick-gate@0.2.2
+npm install -g quick-gate@0.2.3
 ```
 
 ```bash
@@ -21,7 +21,7 @@ quick-gate --help
 ```
 
 ```text
-Quick Gate v0.2.2
+Quick Gate v0.2.3
 
 Commands:
   quick-gate run --mode quick|full --changed-files <path>
@@ -52,10 +52,10 @@ Requires **Node.js >= 18** and a project with dependencies installed (`npm ci`).
 
 ```bash
 # From your project directory:
-npx quick-gate@0.2.2 run --mode quick --changed-files <path>
+npx quick-gate@0.2.3 run --mode quick --changed-files <path>
 
 # Or install globally:
-npm install -g quick-gate@0.2.2
+npm install -g quick-gate@0.2.3
 quick-gate --help
 ```
 

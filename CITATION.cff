@@ -7,7 +7,7 @@ authors:
     given-names: "Rolando"
     orcid: "https://orcid.org/0009-0005-4896-1112"
     affiliation: "Hermes Labs"
-version: "0.2.2"
+version: "0.2.3"
 date-released: "2026-08-08"
 license: "Apache-2.0"
 repository-code: "https://github.com/hermes-labs-ai/quick-gate-js"

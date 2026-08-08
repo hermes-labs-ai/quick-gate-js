@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.2] - 2026-08-08
+## [0.2.3] - 2026-08-08
 
 ### Changed
 - Standardized the documented CLI on `quick|full` modes.
