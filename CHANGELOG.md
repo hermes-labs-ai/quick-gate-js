@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-08-08
+
+### Changed
+- Standardized the documented CLI on `quick|full` modes.
+- Kept `canary` as a backward-compatible input alias that emits canonical `quick` artifacts.
+
 ## [0.2.0] - 2026-02-25
 
 ### Added

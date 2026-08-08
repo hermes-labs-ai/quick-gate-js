@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -61,6 +63,34 @@ test('run with invalid mode exits 1', () => {
   const result = runCli(['run', '--mode', 'invalid', '--changed-files', '/tmp/test.txt']);
   assert.equal(result.code, 1);
   assert.ok(result.stderr.includes('--mode quick|full'));
+});
+
+test('canary remains an input alias and emits canonical quick artifacts', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-cli-'));
+  const pass = 'node -e "process.exit(0)"';
+  fs.writeFileSync(path.join(cwd, 'package.json'), JSON.stringify({
+    scripts: {
+      lint: pass,
+      typecheck: pass,
+      lighthouse: pass,
+    },
+  }));
+  fs.writeFileSync(path.join(cwd, 'changed-files.txt'), 'src/index.js\n');
+
+  const result = runCli([
+    'run',
+    '--mode',
+    'canary',
+    '--changed-files',
+    'changed-files.txt',
+  ], { cwd });
+
+  assert.equal(result.code, 0, result.stderr);
+  const failures = JSON.parse(fs.readFileSync(path.join(cwd, '.quick-gate', 'failures.json')));
+  const metadata = JSON.parse(fs.readFileSync(path.join(cwd, '.quick-gate', 'run-metadata.json')));
+  assert.equal(failures.mode, 'quick');
+  assert.equal(metadata.mode, 'quick');
+  assert.equal(failures.gates.find((gate) => gate.name === 'build').status, 'skipped');
 });
 
 test('summarize without --input exits 1', () => {

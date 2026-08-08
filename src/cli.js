@@ -52,15 +52,16 @@ async function main() {
 
   try {
     if (cmd === 'run') {
-      if (!args.mode || !['quick', 'full'].includes(String(args.mode))) {
+      if (!args.mode || !['quick', 'canary', 'full'].includes(String(args.mode))) {
         throw new Error('run requires --mode quick|full');
       }
       if (!args['changed-files']) {
         throw new Error('run requires --changed-files <path>');
       }
+      const mode = String(args.mode) === 'canary' ? 'quick' : String(args.mode);
       const changedFilesPath = path.resolve(process.cwd(), String(args['changed-files']));
       const changedFiles = loadChangedFiles(changedFilesPath);
-      const result = executeRun({ mode: String(args.mode), changedFiles });
+      const result = executeRun({ mode, changedFiles });
       console.log(JSON.stringify(result, null, 2));
       process.exit(result.status === 'pass' ? 0 : 1);
     }
