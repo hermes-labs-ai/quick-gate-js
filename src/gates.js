@@ -230,7 +230,7 @@ export function runDeterministicGates({
       checks.push({
         name: gate.name,
         status: 'skipped',
-        argv: null,
+        argv: [],
         elapsed_ms: 0,
         timed_out: false,
         output_truncated: false,
@@ -257,8 +257,8 @@ export function runDeterministicGates({
         : 'MISSING_COMMAND';
       checks.push({
         name: gate.name,
-        status: 'fail',
-        argv: null,
+        status: errorCode === 'MISSING_COMMAND' ? 'missing' : 'error',
+        argv: [],
         elapsed_ms: 0,
         timed_out: false,
         output_truncated: false,

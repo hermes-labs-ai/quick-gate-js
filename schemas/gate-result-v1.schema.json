@@ -83,10 +83,22 @@
       "type": "boolean"
     },
     "errors": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"type": "object"}
+        ]
+      }
     },
     "diagnostics": {
-      "type": "array"
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {"type": "object"}
+        ]
+      }
     },
     "config_identity": {
       "type": [
@@ -138,10 +150,7 @@
           ]
         },
         "argv": {
-          "type": [
-            "array",
-            "null"
-          ],
+          "type": "array",
           "items": {
             "type": "string"
           }

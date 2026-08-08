@@ -118,6 +118,8 @@ test('missing command produces finding', () => {
   const finding = result.findings.find((f) => f.id === 'lint_missing_command');
   assert.ok(finding);
   assert.equal(finding.actual, 'missing');
+  assert.equal(result.gateResult.status, 'error');
+  assert.equal(result.gateResult.checks.find((check) => check.name === 'lint').status, 'missing');
 });
 
 test('missing executable status retains a repair-blocking finding', () => {
