@@ -2,7 +2,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { runCommand } from './exec.js';
 import { loadConfig } from './config.js';
-import { nowIso, writeJsonFileSync } from './fs-utils.js';
+import { nowIso, writeJsonFileSync, ensureDirSync } from './fs-utils.js';
 import { runDeterministicGates } from './gates.js';
 import {
   GATE_RESULT_FILE,
@@ -25,6 +25,7 @@ export function executeRun({ mode, changedFiles, cwd = process.cwd(), artifactDi
   const startedAt = Date.now();
   const config = loadConfig(cwd);
   const resolvedArtifactDir = artifactDir || outputDir;
+  if (resolvedArtifactDir) ensureDirSync(resolvedArtifactDir);
 
   const gateExecution = runDeterministicGates({
     mode,
