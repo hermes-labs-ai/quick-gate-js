@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/hermes-labs-ai/quick-gate-js/main/schemas/gate-result-v1.schema.json",
+  "title": "Quick Gate gate-result/v1",
+  "type": "object",
+  "required": [
+    "version",
+    "status",
+    "snapshot_digest",
+    "checked_paths",
+    "checks",
+    "findings",
+    "command_versions",
+    "elapsed_ms",
+    "output_truncated",
+    "errors"
+  ],
+  "properties": {
+    "version": { "const": "gate-result/v1" },
+    "status": { "enum": ["pass", "fail", "error"] },
+    "snapshot_digest": { "type": "string", "minLength": 1 },
+    "checked_paths": { "type": "array", "items": { "type": "string" } },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status", "elapsed_ms"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "enum": ["pass", "fail", "skipped"] },
+          "elapsed_ms": { "type": "integer", "minimum": 0 },
+          "command": { "type": "string" },
+          "argv": { "type": ["array", "null"], "items": { "type": "string" } },
+          "timeout_ms": { "type": "integer", "minimum": 0 },
+          "exit_code": { "type": ["integer", "null"] },
+          "signal": { "type": ["string", "null"] },
+          "error_code": { "type": ["string", "null"] },
+          "timed_out": { "type": "boolean" },
+          "output_truncated": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": { "type": "array", "items": { "type": "object" } },
+    "command_versions": { "type": "object", "additionalProperties": true },
+    "elapsed_ms": { "type": "integer", "minimum": 0 },
+    "output_truncated": { "type": "boolean" },
+    "errors": {
+      "type": "array",
+      "items": { "type": ["string", "object"] }
+    },
+    "config_identity": { "type": "object" },
+    "config_digest": { "type": "string" },
+    "config_version": { "type": "string" },
+    "package_version": { "type": "string" },
+    "state_dir": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

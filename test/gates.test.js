@@ -126,7 +126,7 @@ test('config command overrides package.json script', () => {
     typecheck: 'exit 0',
     lighthouse: 'exit 0',
   });
-  const config = defaultConfig({ commands: { lint: 'exit 0' } });
+  const config = defaultConfig({ commands: { lint: ['sh', '-c', 'exit 0'] } });
   const result = runDeterministicGates({
     mode: 'quick',
     cwd,
@@ -153,7 +153,7 @@ test('typecheck fallback to npx tsc --noEmit when no script', () => {
   const tcGate = result.gates.find((g) => g.name === 'typecheck');
   assert.ok(tcGate);
   assert.ok(['pass', 'fail'].includes(tcGate.status));
-  const trace = result.traces.find((t) => t.command === 'npx tsc --noEmit');
+  const trace = result.traces.find((t) => t.command === 'npx --no-install tsc --noEmit');
   assert.ok(trace);
 });
 
@@ -175,7 +175,7 @@ test('lighthouse fallback to exit code finding when no assertion-results', () =>
   assert.equal(lhGate.status, 'fail');
   const finding = result.findings.find((f) => f.gate === 'lighthouse');
   assert.ok(finding);
-  assert.ok(finding.id.startsWith('lighthouse_exit_'));
+  assert.equal(finding.id, 'lighthouse_failure');
   assert.equal(finding.actual, 1);
 });
 

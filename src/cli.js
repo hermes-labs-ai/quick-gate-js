@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { loadChangedFiles } from './fs-utils.js';
 import { executeRun } from './run-command.js';
@@ -28,6 +30,7 @@ function usage() {
 
 Commands:
   quick-gate run --mode quick|full --changed-files <path>
+    --output-dir <external-directory>
   quick-gate summarize --input .quick-gate/failures.json
   quick-gate repair --input .quick-gate/failures.json [--max-attempts 3] [--deterministic-only]
 
@@ -61,7 +64,10 @@ async function main() {
       const mode = String(args.mode) === 'canary' ? 'quick' : String(args.mode);
       const changedFilesPath = path.resolve(process.cwd(), String(args['changed-files']));
       const changedFiles = loadChangedFiles(changedFilesPath);
-      const result = executeRun({ mode, changedFiles });
+      const outputDir = args['output-dir']
+        ? path.resolve(process.cwd(), String(args['output-dir']))
+        : fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-run-'));
+      const result = executeRun({ mode, changedFiles, outputDir });
       console.log(JSON.stringify(result, null, 2));
       process.exit(result.status === 'pass' ? 0 : 1);
     }

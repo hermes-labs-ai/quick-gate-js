@@ -12,7 +12,7 @@ import { hasRsync, hasGit } from './env-check.js';
 function diffSnapshot(cwd) {
   if (!hasGit()) return new Map();
   const diff = runCommand(
-    "git diff --numstat -- . ':(exclude).quick-gate' ':(exclude).next' ':(exclude).lighthouseci' ':(exclude)node_modules' ':(exclude)tmp'",
+    ['git', 'diff', '--numstat', '--', '.', ':(exclude).quick-gate', ':(exclude).next', ':(exclude).lighthouseci', ':(exclude)node_modules', ':(exclude)tmp'],
     { cwd },
   );
   const map = new Map();
@@ -47,19 +47,19 @@ function computePatchLines(beforeMap, afterMap) {
 
 function backupWorkspace(cwd, backupDir) {
   if (hasRsync()) {
-    runCommand(`mkdir -p '${backupDir}' && rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${cwd}/' '${backupDir}/'`, { cwd });
+    runCommand(`mkdir -p '${backupDir}' && rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${cwd}/' '${backupDir}/'`, { cwd, unsafeShell: true });
   } else {
-    runCommand(`mkdir -p '${backupDir}' && cp -R '${cwd}/.' '${backupDir}/' 2>/dev/null; rm -rf '${backupDir}/.git' '${backupDir}/node_modules' '${backupDir}/.next' '${backupDir}/.quick-gate'`, { cwd });
+    runCommand(`mkdir -p '${backupDir}' && cp -R '${cwd}/.' '${backupDir}/' 2>/dev/null; rm -rf '${backupDir}/.git' '${backupDir}/node_modules' '${backupDir}/.next' '${backupDir}/.quick-gate'`, { cwd, unsafeShell: true });
   }
 }
 
 function restoreWorkspace(cwd, backupDir) {
   if (hasRsync()) {
-    runCommand(`rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${backupDir}/' '${cwd}/'`, { cwd });
+    runCommand(`rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${backupDir}/' '${cwd}/'`, { cwd, unsafeShell: true });
   } else {
     const excludes = ['.git', 'node_modules', '.next', '.quick-gate'];
     const excludeArgs = excludes.map((e) => `! -name '${e}'`).join(' ');
-    runCommand(`find '${backupDir}' -maxdepth 1 ${excludeArgs} ! -path '${backupDir}' -exec cp -R {} '${cwd}/' \\;`, { cwd });
+    runCommand(`find '${backupDir}' -maxdepth 1 ${excludeArgs} ! -path '${backupDir}' -exec cp -R {} '${cwd}/' \\;`, { cwd, unsafeShell: true });
   }
 }
 
@@ -74,6 +74,7 @@ function runRepairActions(cwd, failures, policy, deterministicOnly) {
       mode: currentFailures.mode,
       changedFiles: currentFailures.changed_files || [],
       cwd,
+      artifactDir: path.join(cwd, '.quick-gate'),
     });
     currentFailures = readJsonFileSync(path.join(cwd, '.quick-gate', 'failures.json'));
     executeSummarize({ input: '.quick-gate/failures.json', cwd });
@@ -224,6 +225,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
       mode: failuresForRerun.mode,
       changedFiles: failuresForRerun.changed_files || [],
       cwd,
+      artifactDir: path.join(cwd, '.quick-gate'),
     });
     failures = readJsonFileSync(path.join(cwd, '.quick-gate', 'failures.json'));
     executeSummarize({ input: '.quick-gate/failures.json', cwd });

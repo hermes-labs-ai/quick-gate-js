@@ -25,7 +25,7 @@ npm test
 
 ## Output shape
 
-- `quick-gate run`: writes `.quick-gate/failures.json` and `.quick-gate/run-metadata.json`
+- `quick-gate run`: writes `failures.json`, `run-metadata.json`, and `gate-result.json` to an external temporary directory by default; use `--output-dir` for an explicit directory
 - `quick-gate summarize`: writes `.quick-gate/agent-brief.json` and `.quick-gate/agent-brief.md`
 - `quick-gate repair`: writes `.quick-gate/repair-report.json` or `.quick-gate/escalation.json`
 

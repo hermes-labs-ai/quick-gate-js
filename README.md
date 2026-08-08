@@ -100,7 +100,11 @@ quick-gate repair --input .quick-gate/failures.json [--max-attempts 3] [--determ
 
 ## Artifacts
 
-Generated in your project under `.quick-gate/`:
+`quick-gate run` writes artifacts to an external temporary directory by default. Pass
+`--output-dir /absolute/path` to choose the artifact/state directory explicitly; the
+reviewed worktree is never populated implicitly.
+
+Generated in the chosen output directory:
 
 | File | Description |
 |------|-------------|
@@ -110,6 +114,26 @@ Generated in your project under `.quick-gate/`:
 | `agent-brief.md` | Human-readable summary |
 | `repair-report.json` | Repair attempt history (on success) |
 | `escalation.json` | Escalation reason + evidence (when repair fails) |
+| `gate-result.json` | Versioned `gate-result/v1` contract with provenance and diagnostics |
+
+## Embeddable API
+
+The side-effect-free API evaluates gates and returns a structured result without
+writing Quick Gate artifacts:
+
+```js
+import { evaluateGates } from 'quick-gate';
+
+const result = evaluateGates({
+  mode: 'quick',
+  cwd: process.cwd(),
+  changedFiles: ['src/app.ts'],
+});
+```
+
+Commands are executed with argv arrays and `shell: false` by default. Legacy string
+commands must opt into compatibility mode with `allowUnsafeShellCommands: true` in
+`quick-gate.config.json`; `npx` fallbacks use `--no-install`.
 
 ## Repair Policy
 
@@ -173,7 +197,7 @@ This will:
 - Run lint, typecheck, and Lighthouse gates
 - Attempt deterministic repair (eslint --fix) on failures
 - Post a structured findings comment on the PR
-- Upload `.quick-gate/` artifacts for inspection
+- Upload the configured Quick Gate artifact directory for inspection
 
 No Ollama required -- CI runs in deterministic-only mode by default.
 
@@ -184,17 +208,21 @@ Create `quick-gate.config.json` in your project root to override defaults:
 ```json
 {
   "commands": {
-    "lint": "npm run lint",
-    "typecheck": "npm run typecheck",
-    "build": "npm run build",
-    "lighthouse": "npm run ci:lighthouse"
+    "lint": ["npm", "run", "lint"],
+    "typecheck": ["npm", "run", "typecheck"],
+    "build": ["npm", "run", "build"],
+    "lighthouse": ["npm", "run", "ci:lighthouse"]
   },
   "policy": {
     "maxAttempts": 3,
     "maxPatchLines": 150,
     "abortOnNoImprovement": 2,
-    "timeCapMs": 1200000
-  }
+    "timeCapMs": 1200000,
+    "commandTimeoutMs": 120000,
+    "gateTimeoutMs": 300000,
+    "outputCapBytes": 65536
+  },
+  "allowUnsafeShellCommands": false
 }
 ```
 

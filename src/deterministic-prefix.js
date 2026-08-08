@@ -1,10 +1,6 @@
 import path from 'node:path';
 import { runCommand } from './exec.js';
 
-function shellQuote(value) {
-  return `'${String(value).replace(/'/g, `'"'"'`)}'`;
-}
-
 function inScopeFiles(failures) {
   const fromChanged = Array.isArray(failures.changed_files) ? failures.changed_files : [];
   const fromFindings = (failures.findings || []).flatMap((f) => (Array.isArray(f.files) ? f.files : []));
@@ -24,14 +20,13 @@ function hasGateFailure(failures, gate) {
 
 function runLintProblemAutofix({ cwd, files }) {
   if (files.length === 0) return null;
-  const fileArgs = files.map((f) => shellQuote(f)).join(' ');
-  const cmd = `npx eslint ${fileArgs} --fix --fix-type problem`;
+  const cmd = ['npx', '--no-install', 'eslint', ...files, '--fix', '--fix-type', 'problem'];
   const result = runCommand(cmd, { cwd });
   return {
     rule_id: 'LINT_PROBLEM_AUTOFIX',
     strategy: 'deterministic_prefix',
     accepted: result.exit_code === 0,
-    command: cmd,
+    command: cmd.join(' '),
     exit_code: result.exit_code,
     files,
     rationale: 'Apply only ESLint problem fixes on scoped files to minimize semantic-risk edits.',
