@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const GATE_RESULT_VERSION = 'gate-result/v1';
+const SNAPSHOT_SKIP_DIRS = new Set(['.git', '.quick-gate', '.pygate', '__pycache__', '.venv', 'venv', 'node_modules']);
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -36,33 +37,66 @@ function safeRelativePath(cwd, rawPath) {
 }
 
 export function snapshotInput({ cwd, paths = [] }) {
-  const checkedPaths = Array.from(new Set(paths.map(String)))
+  const requestedPaths = Array.from(new Set(paths.map(String)))
     .map((rawPath) => safeRelativePath(cwd, rawPath))
     .filter(Boolean)
     .sort();
 
-  const entries = checkedPaths.map((relativePath) => {
-    const fullPath = path.join(cwd, relativePath);
+  const expandedPaths = new Set();
+  for (const requestedPath of requestedPaths) {
+    const fullPath = path.join(cwd, requestedPath);
+    const files = filesForSnapshot(fullPath);
+    for (const filePath of files.length > 0 ? files : [fullPath]) {
+      const relativePath = safeRelativePath(cwd, filePath);
+      if (relativePath) expandedPaths.add(relativePath);
+    }
+  }
+
+  const entries = Array.from(expandedPaths).sort().map((relativePath) => {
+    const fullPath = path.resolve(cwd, relativePath);
     try {
       const stat = fs.statSync(fullPath);
       if (!stat.isFile()) {
-        return { path: relativePath, type: stat.isDirectory() ? 'directory' : 'other' };
+        return { path: relativePath, exists: false };
       }
-      return { path: relativePath, type: 'file', sha256: sha256(fs.readFileSync(fullPath)), size: stat.size };
-    } catch (error) {
-      return {
-        path: relativePath,
-        type: 'missing',
-        error: error?.code || 'UNKNOWN',
-      };
+      return { path: relativePath, exists: true, size: stat.size, sha256: sha256(fs.readFileSync(fullPath)) };
+    } catch {
+      return { path: relativePath, exists: false };
     }
   });
+  const checkedPaths = entries.map((entry) => entry.path);
 
   return {
     checkedPaths,
-    snapshotDigest: sha256({ checked_paths: checkedPaths, entries }),
+    snapshotDigest: sha256(entries),
     entries,
   };
+}
+
+function filesForSnapshot(startPath) {
+  try {
+    const stat = fs.lstatSync(startPath);
+    if (stat.isFile() || stat.isSymbolicLink()) return [startPath];
+    if (!stat.isDirectory()) return [startPath];
+  } catch {
+    return [startPath];
+  }
+  const files = [];
+  const visit = (directory) => {
+    const children = fs.readdirSync(directory, { withFileTypes: true })
+      .sort((left, right) => (left.name === right.name ? 0 : left.name < right.name ? -1 : 1));
+    for (const child of children) {
+      const childPath = path.join(directory, child.name);
+      if (child.isDirectory()) {
+        if (SNAPSHOT_SKIP_DIRS.has(child.name) || child.name.startsWith('.')) continue;
+        visit(childPath);
+      } else {
+        files.push(childPath);
+      }
+    }
+  };
+  visit(startPath);
+  return files;
 }
 
 export function configIdentity(config) {

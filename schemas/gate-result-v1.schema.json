@@ -116,7 +116,11 @@
       "additionalProperties": true,
       "required": [
         "name",
-        "status"
+        "status",
+        "argv",
+        "elapsed_ms",
+        "timed_out",
+        "output_truncated"
       ],
       "properties": {
         "name": {

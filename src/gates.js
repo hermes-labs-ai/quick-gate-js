@@ -227,7 +227,15 @@ export function runDeterministicGates({
     const gateStartedAt = Date.now();
     if (!gate.enabled) {
       gates.push({ name: gate.name, status: 'skipped', duration_ms: 0 });
-      checks.push({ name: gate.name, status: 'skipped', elapsed_ms: 0, timeout_ms: perGateTimeout });
+      checks.push({
+        name: gate.name,
+        status: 'skipped',
+        argv: null,
+        elapsed_ms: 0,
+        timed_out: false,
+        output_truncated: false,
+        timeout_ms: perGateTimeout,
+      });
       continue;
     }
 
@@ -247,7 +255,16 @@ export function runDeterministicGates({
       const errorCode = gate.name === 'lighthouse' && !externalStateDir
         ? 'EXTERNAL_STATE_DIR_REQUIRED'
         : 'MISSING_COMMAND';
-      checks.push({ name: gate.name, status: 'fail', elapsed_ms: 0, timeout_ms: perGateTimeout, error_code: errorCode });
+      checks.push({
+        name: gate.name,
+        status: 'fail',
+        argv: null,
+        elapsed_ms: 0,
+        timed_out: false,
+        output_truncated: false,
+        timeout_ms: perGateTimeout,
+        error_code: errorCode,
+      });
       findings.push({
         id: `${gate.name}_${errorCode.toLowerCase()}`,
         gate: gate.name,

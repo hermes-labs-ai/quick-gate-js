@@ -12,7 +12,11 @@
         "checks": [
           {
             "name": "lint",
-            "status": "pass"
+            "status": "pass",
+            "argv": ["ruff", "check", "."],
+            "elapsed_ms": 1,
+            "timed_out": false,
+            "output_truncated": false
           }
         ],
         "findings": [],
@@ -37,12 +41,18 @@
           {
             "name": "test",
             "status": "timeout",
+            "argv": ["pytest"],
             "elapsed_ms": 50,
-            "timed_out": true
+            "timed_out": true,
+            "output_truncated": false
           },
           {
             "name": "build",
-            "status": "skipped"
+            "status": "skipped",
+            "argv": null,
+            "elapsed_ms": 0,
+            "timed_out": false,
+            "output_truncated": false
           }
         ],
         "findings": [],
@@ -68,8 +78,11 @@
           {
             "name": "lint",
             "status": "pass",
+            "argv": ["ruff"],
             "elapsed_ms": 1.0,
-            "exit_code": 0.0
+            "exit_code": 0.0,
+            "timed_out": false,
+            "output_truncated": false
           }
         ],
         "findings": [],
