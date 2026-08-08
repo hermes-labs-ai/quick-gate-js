@@ -153,6 +153,14 @@ function runRepairActions(cwd, failures, policy, deterministicOnly, stateDir) {
 
 export function executeRepair({ input, maxAttempts, deterministicOnly = false, cwd = process.cwd(), outputDir }) {
   const stateDir = path.resolve(outputDir || path.join(cwd, '.quick-gate'));
+  if (outputDir) {
+    const relativeState = path.relative(path.resolve(cwd), stateDir);
+    const insideWorktree = relativeState === ''
+      || (!relativeState.startsWith(`..${path.sep}`) && relativeState !== '..' && !path.isAbsolute(relativeState));
+    if (insideWorktree) {
+      throw new Error('repair --output-dir must be outside the project worktree');
+    }
+  }
   const config = loadConfig(cwd);
   const policy = {
     maxAttempts: Number(maxAttempts || config.policy.maxAttempts || DEFAULT_POLICY.maxAttempts),

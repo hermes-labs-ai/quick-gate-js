@@ -281,7 +281,7 @@ export function runDeterministicGates({
     const status = check.status;
     gates.push({ name: gate.name, status: status === 'pass' ? 'pass' : 'fail', duration_ms: result.duration_ms });
 
-    if (status === 'fail') {
+    if (status !== 'pass') {
       const lighthouseFindings = gate.name === 'lighthouse'
         ? parseLighthouseFindings(resolvedCwd, externalStateDir, resolvedConfig.lighthouse?.thresholds)
         : [];

@@ -63,7 +63,17 @@
       "type": "array"
     },
     "command_versions": {
-      "type": "object"
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object"
+          }
+        ]
+      }
     },
     "elapsed_ms": {
       "type": "integer",

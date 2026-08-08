@@ -367,3 +367,20 @@ test('repair keeps state in an explicit external output directory', () => {
   assert.equal(fs.existsSync(path.join(outputDir, 'repair-report.json')), true);
   assert.equal(fs.existsSync(path.join(cwd, '.quick-gate')), false);
 });
+
+test('repair rejects an explicit output directory inside the worktree', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-internal-cwd-'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"fixture","scripts":{}}\n');
+  const outputDir = path.join(cwd, 'qg-state');
+  fs.mkdirSync(outputDir);
+  const failuresPath = path.join(outputDir, 'failures.json');
+  fs.writeFileSync(
+    failuresPath,
+    JSON.stringify({ mode: 'quick', changed_files: [], findings: [] }),
+  );
+
+  assert.throws(
+    () => executeRepair({ input: failuresPath, cwd, outputDir, deterministicOnly: true }),
+    /must be outside the project worktree/,
+  );
+});

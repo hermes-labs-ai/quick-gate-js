@@ -120,6 +120,21 @@ test('missing command produces finding', () => {
   assert.equal(finding.actual, 'missing');
 });
 
+test('missing executable status retains a repair-blocking finding', () => {
+  const cwd = mkFixture({ typecheck: 'exit 0', lighthouse: 'exit 0' });
+  const result = runDeterministicGates({
+    mode: 'quick',
+    cwd,
+    config: defaultConfig({ commands: { lint: ['quick-gate-command-that-does-not-exist'] } }),
+    changedFiles: [],
+  });
+
+  const lintCheck = result.gateResult.checks.find((check) => check.name === 'lint');
+  assert.equal(lintCheck.status, 'missing');
+  assert.equal(result.gateResult.status, 'error');
+  assert.ok(result.findings.some((finding) => finding.gate === 'lint'));
+});
+
 test('config command overrides package.json script', () => {
   const cwd = mkFixture({
     lint: 'exit 1',

@@ -186,6 +186,24 @@
         "output_truncated": false,
         "errors": []
       }
+    },
+    {
+      "name": "non-string-command-version",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "pass",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {
+          "ruff": 123
+        },
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
     }
   ]
 }
