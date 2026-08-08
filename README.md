@@ -52,7 +52,7 @@ Quick Gate is a coordinator around the commands already defined by your project.
 
 The CLI requires an explicit mode. In a project with matching npm scripts, Quick Gate uses `npm run lint`, `npm run typecheck`, `npm run build`, and an available Lighthouse script. You can override commands in `quick-gate.config.json`. If no `typecheck` script exists, it tries `npx --no-install tsc --noEmit`; if no Lighthouse script exists, the Lighthouse fallback requires an explicit output directory so its filesystem results have a known home.
 
-Every run records pass/fail/skipped checks, command traces, exit and timeout information, findings, command versions, a snapshot digest for the checked paths, and whether output was truncated. A run exits `0` when the gate passes and `1` when it fails.
+Every run records `pass`, `fail`, `timeout`, `missing`, `error`, or `skipped` checks, command traces, exit and timeout information, findings, command versions, a snapshot digest for the checked paths, and whether output was truncated. A run exits `0` when the gate passes and `1` otherwise.
 
 ## Artifacts and output directories
 
@@ -79,14 +79,16 @@ The following commands have separate, legacy worktree behavior:
 
 ```bash
 npx --no-install quick-gate summarize \
-  --input "$QG_OUTPUT/failures.json"
+  --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT"
 
 npx --no-install quick-gate repair \
   --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT" \
   --deterministic-only
 ```
 
-`summarize` writes `.quick-gate/agent-brief.json` and `.quick-gate/agent-brief.md` in the current working directory. `repair` writes its rerun artifacts, repair report, escalation, and backup directories under `.quick-gate/`; it may modify project files, so inspect the diff before accepting changes. A `.quick-gate/failures.json` input is therefore a compatibility convention for these commands, not the default output location of `run`.
+When `--output-dir` is provided, `summarize` and `repair` keep their reports, rerun artifacts, escalation, and backup directories in that same external directory. Without it, they retain the legacy `.quick-gate/` behavior. Repair may modify project files, so inspect the diff before accepting changes.
 
 ## The next useful command
 
@@ -94,7 +96,8 @@ After a failed run, turn its findings into prioritized human- and agent-readable
 
 ```bash
 npx --no-install quick-gate summarize \
-  --input "$QG_OUTPUT/failures.json"
+  --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT"
 ```
 
 For repair, start with deterministic-only mode. It can apply scoped ESLint fixes, rerun the gate, and escalate when it cannot make bounded progress. Model-assisted repair is optional and only runs when Ollama is available and deterministic-only mode is not requested.
@@ -102,6 +105,7 @@ For repair, start with deterministic-only mode. It can apply scoped ESLint fixes
 ```bash
 npx --no-install quick-gate repair \
   --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT" \
   --max-attempts 3 \
   --deterministic-only
 ```
@@ -130,7 +134,7 @@ console.log(gateResult.status, findings);
 
 The `gate-result/v1` contract gives downstream tooling a common envelope for:
 
-- overall `pass`, `fail`, or `error` status;
+- overall `pass`, `fail`, `timeout`, or `error` status;
 - checked paths and a snapshot digest;
 - per-gate check status, timing, command, timeout, and exit information;
 - structured findings and command-version information; and
@@ -208,7 +212,7 @@ jobs:
           --output-dir "$RUNNER_TEMP/quick-gate"
 ```
 
-The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml). Review it before adopting it as a turnkey workflow: its current implementation installs `quick-gate@latest` and still assumes legacy `.quick-gate` paths while the current CLI defaults `run` artifacts to an external temporary directory. The direct workflow above keeps those paths explicit. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
+The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml). It executes the action checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
 
 ## Safety, privacy, and limits
 
@@ -233,7 +237,7 @@ The underlying project commands can have their own network access and side effec
 - **No `.quick-gate` directory after `run`** — this is expected unless you explicitly set `--output-dir .quick-gate`; the default is external temporary storage.
 - **`canary` appears in older automation** — it remains accepted as a backward-compatible alias for `quick` and is recorded canonically as `quick`. New commands should use `quick`.
 
-The CLI has `--help`; it does not expose a separate `--version` flag. The version is shown by the help output and is also recorded in package metadata and run artifacts.
+Use `quick-gate --version` for the installed package version and `quick-gate --help` for usage. The version is also recorded in package metadata and run artifacts.
 
 ## Development and contribution
 

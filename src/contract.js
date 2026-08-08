@@ -100,6 +100,8 @@ export function buildGateResult({
   ...extensions
 }) {
   return {
+    schema: GATE_RESULT_VERSION,
+    // Deprecated compatibility discriminator. Remove in the next breaking release.
     version: GATE_RESULT_VERSION,
     status,
     snapshot_digest: snapshotDigest,

@@ -70,7 +70,7 @@ export function executeRun({ mode, changedFiles, cwd = process.cwd(), artifactDi
     duration_ms: Date.now() - startedAt,
     config_source: config.source === 'defaults' ? 'defaults' : path.basename(String(config.source || 'provided')),
     command_traces: gateExecution.traces,
-    gate_result_version: gateResult.version,
+    gate_result_version: gateResult.schema,
     artifact_dir: resolvedArtifactDir,
   };
 

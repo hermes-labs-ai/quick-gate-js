@@ -63,7 +63,7 @@ function restoreWorkspace(cwd, backupDir) {
   }
 }
 
-function runRepairActions(cwd, failures, policy, deterministicOnly) {
+function runRepairActions(cwd, failures, policy, deterministicOnly, stateDir) {
   const attempted = [];
   let currentFailures = failures;
 
@@ -74,10 +74,10 @@ function runRepairActions(cwd, failures, policy, deterministicOnly) {
       mode: currentFailures.mode,
       changedFiles: currentFailures.changed_files || [],
       cwd,
-      artifactDir: path.join(cwd, '.quick-gate'),
+      artifactDir: stateDir,
     });
-    currentFailures = readJsonFileSync(path.join(cwd, '.quick-gate', 'failures.json'));
-    executeSummarize({ input: '.quick-gate/failures.json', cwd });
+    currentFailures = readJsonFileSync(path.join(stateDir, 'failures.json'));
+    executeSummarize({ input: path.join(stateDir, 'failures.json'), cwd, outputDir: stateDir });
 
     attempted.push({
       strategy: 'deterministic_prefix_rerun',
@@ -151,7 +151,8 @@ function runRepairActions(cwd, failures, policy, deterministicOnly) {
   };
 }
 
-export function executeRepair({ input, maxAttempts, deterministicOnly = false, cwd = process.cwd() }) {
+export function executeRepair({ input, maxAttempts, deterministicOnly = false, cwd = process.cwd(), outputDir }) {
+  const stateDir = path.resolve(outputDir || path.join(cwd, '.quick-gate'));
   const config = loadConfig(cwd);
   const policy = {
     maxAttempts: Number(maxAttempts || config.policy.maxAttempts || DEFAULT_POLICY.maxAttempts),
@@ -173,15 +174,15 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
         reason_code: ESCALATION_CODES.UNKNOWN_BLOCKER,
         message: `Time cap reached (${policy.timeCapMs}ms).`,
       };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+      writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
       return escalation;
     }
 
-    const backupDir = path.join(cwd, '.quick-gate', `backup-attempt-${attempt}`);
+    const backupDir = path.join(stateDir, `backup-attempt-${attempt}`);
     backupWorkspace(cwd, backupDir);
 
     const preActionDiff = diffSnapshot(cwd);
-    const repairResult = runRepairActions(cwd, failures, policy, deterministicOnly);
+    const repairResult = runRepairActions(cwd, failures, policy, deterministicOnly, stateDir);
     const repairActions = repairResult.attempted;
     const failuresForRerun = repairResult.currentFailures;
     const postActionDiff = diffSnapshot(cwd);
@@ -201,7 +202,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
           post_action_diff_files: postActionDiff.size,
         },
       };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+      writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
       return escalation;
     }
 
@@ -217,7 +218,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
         actions: repairActions,
       });
       const result = { status: 'pass', attempts };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'repair-report.json'), result);
+      writeJsonFileSync(path.join(stateDir, 'repair-report.json'), result);
       return result;
     }
 
@@ -225,10 +226,10 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
       mode: failuresForRerun.mode,
       changedFiles: failuresForRerun.changed_files || [],
       cwd,
-      artifactDir: path.join(cwd, '.quick-gate'),
+      artifactDir: stateDir,
     });
-    failures = readJsonFileSync(path.join(cwd, '.quick-gate', 'failures.json'));
-    executeSummarize({ input: '.quick-gate/failures.json', cwd });
+    failures = readJsonFileSync(path.join(stateDir, 'failures.json'));
+    executeSummarize({ input: path.join(stateDir, 'failures.json'), cwd, outputDir: stateDir });
 
     const currentCount = failures.findings.length;
     const improved = currentCount < previousCount;
@@ -247,7 +248,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
 
     if (rerun.status === 'pass') {
       const result = { status: 'pass', attempts };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'repair-report.json'), result);
+      writeJsonFileSync(path.join(stateDir, 'repair-report.json'), result);
       return result;
     }
 
@@ -270,11 +271,11 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
         message: `No measurable improvement for ${noImprovement} consecutive attempt(s).`,
         evidence: {
           attempts,
-          latest_failures_path: '.quick-gate/failures.json',
-          latest_metadata_path: '.quick-gate/run-metadata.json',
+          latest_failures_path: path.join(stateDir, 'failures.json'),
+          latest_metadata_path: path.join(stateDir, 'run-metadata.json'),
         },
       };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+      writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
       return escalation;
     }
   }
@@ -284,9 +285,9 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
     reason_code: ESCALATION_CODES.UNKNOWN_BLOCKER,
     message: `Attempts exhausted (${policy.maxAttempts}).`,
     evidence: {
-      latest_failures_path: '.quick-gate/failures.json',
+      latest_failures_path: path.join(stateDir, 'failures.json'),
     },
   };
-  writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+  writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
   return escalation;
 }

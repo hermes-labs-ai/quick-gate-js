@@ -67,8 +67,9 @@ function createMarkdown(failures, brief) {
   return `${lines.join('\n')}\n`;
 }
 
-export function executeSummarize({ input, cwd = process.cwd() }) {
+export function executeSummarize({ input, cwd = process.cwd(), outputDir }) {
   const failures = readJsonFileSync(path.resolve(cwd, input));
+  const stateDir = path.resolve(outputDir || path.join(cwd, '.quick-gate'));
 
   const priorityActions = failures.findings.map((finding) => ({
     finding_id: finding.id,
@@ -107,12 +108,14 @@ export function executeSummarize({ input, cwd = process.cwd() }) {
   }
 
   const md = createMarkdown(failures, brief);
-  writeJsonFileSync(path.join(cwd, AGENT_BRIEF_JSON_FILE), brief);
-  writeTextFileSync(path.join(cwd, AGENT_BRIEF_MD_FILE), md);
+  const briefJsonPath = path.join(stateDir, path.basename(AGENT_BRIEF_JSON_FILE));
+  const briefMdPath = path.join(stateDir, path.basename(AGENT_BRIEF_MD_FILE));
+  writeJsonFileSync(briefJsonPath, brief);
+  writeTextFileSync(briefMdPath, md);
 
   return {
-    briefJsonPath: path.join(cwd, AGENT_BRIEF_JSON_FILE),
-    briefMdPath: path.join(cwd, AGENT_BRIEF_MD_FILE),
+    briefJsonPath,
+    briefMdPath,
     status: brief.status,
   };
 }

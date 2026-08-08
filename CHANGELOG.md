@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Standardized the documented CLI on `quick|full` modes.
 - Kept `canary` as a backward-compatible input alias that emits canonical `quick` artifacts.
+- Added the canonical `schema: "gate-result/v1"` discriminator while retaining deprecated `version` for one release.
+- Made the composite action execute its checked-out source and keep run artifacts in an explicit external directory.
 
 ## [0.2.0] - 2026-02-25
 

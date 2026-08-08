@@ -1,10 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/hermes-labs-ai/quick-gate-js/main/schemas/gate-result-v1.schema.json",
-  "title": "Quick Gate gate-result/v1",
+  "title": "Gate Result v1",
+  "description": "Portable result contract shared by HermesGate, PyGate, and QuickGate.js.",
   "type": "object",
+  "additionalProperties": true,
   "required": [
-    "version",
+    "schema",
     "status",
     "snapshot_digest",
     "checked_paths",
@@ -16,44 +17,145 @@
     "errors"
   ],
   "properties": {
-    "version": { "const": "gate-result/v1" },
-    "status": { "enum": ["pass", "fail", "error"] },
-    "snapshot_digest": { "type": "string", "minLength": 1 },
-    "checked_paths": { "type": "array", "items": { "type": "string" } },
+    "schema": {
+      "const": "gate-result/v1"
+    },
+    "version": {
+      "type": "string",
+      "const": "gate-result/v1",
+      "deprecated": true,
+      "description": "Compatibility discriminator retained for one release. New consumers must use schema."
+    },
+    "status": {
+      "enum": [
+        "pass",
+        "fail",
+        "timeout",
+        "error"
+      ]
+    },
+    "snapshot_digest": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshot_digest_after": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "snapshot_changed": {
+      "type": "boolean"
+    },
+    "checked_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "checks": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["name", "status", "elapsed_ms"],
-        "properties": {
-          "name": { "type": "string" },
-          "status": { "enum": ["pass", "fail", "skipped"] },
-          "elapsed_ms": { "type": "integer", "minimum": 0 },
-          "command": { "type": "string" },
-          "argv": { "type": ["array", "null"], "items": { "type": "string" } },
-          "timeout_ms": { "type": "integer", "minimum": 0 },
-          "exit_code": { "type": ["integer", "null"] },
-          "signal": { "type": ["string", "null"] },
-          "error_code": { "type": ["string", "null"] },
-          "timed_out": { "type": "boolean" },
-          "output_truncated": { "type": "boolean" }
-        },
-        "additionalProperties": false
+        "$ref": "#/$defs/check"
       }
     },
-    "findings": { "type": "array", "items": { "type": "object" } },
-    "command_versions": { "type": "object", "additionalProperties": true },
-    "elapsed_ms": { "type": "integer", "minimum": 0 },
-    "output_truncated": { "type": "boolean" },
-    "errors": {
-      "type": "array",
-      "items": { "type": ["string", "object"] }
+    "findings": {
+      "type": "array"
     },
-    "config_identity": { "type": "object" },
-    "config_digest": { "type": "string" },
-    "config_version": { "type": "string" },
-    "package_version": { "type": "string" },
-    "state_dir": { "type": ["string", "null"] }
+    "command_versions": {
+      "type": "object"
+    },
+    "elapsed_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "output_truncated": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array"
+    },
+    "diagnostics": {
+      "type": "array"
+    },
+    "config_identity": {
+      "type": [
+        "string",
+        "object"
+      ]
+    },
+    "config_digest": {
+      "type": "string"
+    },
+    "config_version": {
+      "type": "string"
+    },
+    "package_version": {
+      "type": "string"
+    },
+    "state_dir": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
   },
-  "additionalProperties": true
+  "$defs": {
+    "check": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "name",
+        "status"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "timeout",
+            "missing",
+            "error",
+            "skipped"
+          ]
+        },
+        "argv": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "signal": {
+          "type": [
+            "integer",
+            "string",
+            "null"
+          ]
+        },
+        "timed_out": {
+          "type": "boolean"
+        },
+        "output_truncated": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
 }

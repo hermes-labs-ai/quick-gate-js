@@ -35,6 +35,12 @@ test('-h exits 0', () => {
   assert.equal(result.code, 0);
 });
 
+test('--version exits 0 with the package version', () => {
+  const result = runCli(['--version']);
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^quick-gate 0\.2\.3\s*$/);
+});
+
 test('no args exits 0 and shows usage', () => {
   const result = runCli([]);
   assert.equal(result.code, 0);

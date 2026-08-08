@@ -32,7 +32,8 @@ Commands:
   quick-gate run --mode quick|full --changed-files <path>
     --output-dir <external-directory>
   quick-gate summarize --input .quick-gate/failures.json
-  quick-gate repair --input .quick-gate/failures.json [--max-attempts 3] [--deterministic-only]
+  quick-gate repair --input .quick-gate/failures.json [--output-dir <external-directory>]
+    [--max-attempts 3] [--deterministic-only]
 
 Options:
   --deterministic-only   Skip model-assisted repair (no Ollama required)
@@ -41,6 +42,10 @@ Options:
 
 async function main() {
   const [, , cmd, ...rest] = process.argv;
+  if (cmd === '--version' || cmd === '-V') {
+    console.log(`quick-gate ${version}`);
+    process.exit(0);
+  }
   if (!cmd || cmd === '--help' || cmd === '-h') {
     usage();
     process.exit(0);
@@ -76,7 +81,10 @@ async function main() {
       if (!args.input) {
         throw new Error('summarize requires --input <path>');
       }
-      const result = executeSummarize({ input: String(args.input) });
+      const result = executeSummarize({
+        input: String(args.input),
+        outputDir: args['output-dir'] ? path.resolve(process.cwd(), String(args['output-dir'])) : undefined,
+      });
       console.log(JSON.stringify(result, null, 2));
       process.exit(0);
     }
@@ -90,6 +98,7 @@ async function main() {
         input: String(args.input),
         maxAttempts: args['max-attempts'],
         deterministicOnly,
+        outputDir: args['output-dir'] ? path.resolve(process.cwd(), String(args['output-dir'])) : undefined,
       });
       console.log(JSON.stringify(result, null, 2));
       process.exit(result.status === 'pass' ? 0 : 2);

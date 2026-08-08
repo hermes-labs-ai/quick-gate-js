@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { evaluateGates } from '../src/api.js';
 import { runCommand } from '../src/exec.js';
 import { stableStringify } from '../src/contract.js';
 import { validateAgainstSchema } from '../src/schema.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function fixtureDir() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-contract-'));
@@ -89,6 +92,7 @@ test('evaluateGates returns gate-result/v1 without writing artifacts', () => {
   const after = fs.readdirSync(cwd).sort();
 
   assert.deepEqual(after, before);
+  assert.equal(result.gateResult.schema, 'gate-result/v1');
   assert.equal(result.gateResult.version, 'gate-result/v1');
   assert.equal(result.gateResult.status, 'pass');
   assert.deepEqual(result.gateResult.checked_paths, ['package.json', 'src file.js']);
@@ -96,6 +100,16 @@ test('evaluateGates returns gate-result/v1 without writing artifacts', () => {
   assert.ok(result.gateResult.config_digest);
   assert.ok(result.gateResult.command_versions.lint.version);
   assert.equal(validateAgainstSchema('gate-result-v1.schema.json', result.gateResult).valid, true);
+});
+
+test('shared gate-result fixtures match the canonical schema', () => {
+  const fixtures = JSON.parse(
+    fs.readFileSync(path.join(__dirname, 'fixtures', 'gate-result-v1.fixtures.json'), 'utf8'),
+  );
+  for (const fixture of fixtures.cases) {
+    const validation = validateAgainstSchema('gate-result-v1.schema.json', fixture.value);
+    assert.equal(validation.valid, fixture.valid, `${fixture.name}: ${JSON.stringify(validation.errors)}`);
+  }
 });
 
 test('stale input is rejected before command execution', () => {

@@ -140,9 +140,14 @@ function checkedPathsFor({ cwd, changedFiles, config }) {
 }
 
 function checkRecord(name, result, timeoutMs) {
+  let status = 'fail';
+  if (result.timed_out) status = 'timeout';
+  else if (result.error_code === 'ENOENT') status = 'missing';
+  else if (result.error_code) status = 'error';
+  else if (result.exit_code === 0) status = 'pass';
   return {
     name,
-    status: result.exit_code === 0 && !result.timed_out ? 'pass' : 'fail',
+    status,
     elapsed_ms: result.duration_ms,
     command: result.command,
     argv: result.argv,
@@ -274,7 +279,7 @@ export function runDeterministicGates({
     const check = checkRecord(gate.name, result, timeoutMs);
     checks.push(check);
     const status = check.status;
-    gates.push({ name: gate.name, status, duration_ms: result.duration_ms });
+    gates.push({ name: gate.name, status: status === 'pass' ? 'pass' : 'fail', duration_ms: result.duration_ms });
 
     if (status === 'fail') {
       const lighthouseFindings = gate.name === 'lighthouse'
@@ -292,8 +297,15 @@ export function runDeterministicGates({
   }
 
   const outputTruncated = traces.some((trace) => trace.output_truncated);
+  const resultStatus = checks.some((check) => check.status === 'timeout')
+    ? 'timeout'
+    : checks.some((check) => ['missing', 'error'].includes(check.status))
+      ? 'error'
+      : findings.length > 0
+        ? 'fail'
+        : 'pass';
   const gateResult = buildGateResult({
-    status: findings.length > 0 ? 'fail' : 'pass',
+    status: resultStatus,
     snapshotDigest: snapshot.snapshotDigest,
     checkedPaths: snapshot.checkedPaths,
     checks,

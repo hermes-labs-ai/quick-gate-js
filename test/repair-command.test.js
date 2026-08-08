@@ -345,3 +345,25 @@ test('lighthouse-only findings skip model patch', () => {
 
   assert.equal(result.status, 'escalated');
 });
+
+test('repair keeps state in an explicit external output directory', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-external-cwd-'));
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-external-state-'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"fixture","scripts":{}}\n');
+  const failuresPath = path.join(outputDir, 'failures.json');
+  fs.writeFileSync(
+    failuresPath,
+    JSON.stringify({ mode: 'quick', changed_files: [], findings: [] }),
+  );
+
+  const result = executeRepair({
+    input: failuresPath,
+    cwd,
+    outputDir,
+    deterministicOnly: true,
+  });
+
+  assert.equal(result.status, 'pass');
+  assert.equal(fs.existsSync(path.join(outputDir, 'repair-report.json')), true);
+  assert.equal(fs.existsSync(path.join(cwd, '.quick-gate')), false);
+});
