@@ -1,8 +1,10 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const GATE_RESULT_VERSION = 'gate-result/v1';
+const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SNAPSHOT_SKIP_DIRS = new Set(['.git', '.quick-gate', '.pygate', '__pycache__', '.venv', 'venv', 'node_modules']);
 
 function canonicalize(value) {
@@ -55,6 +57,10 @@ export function snapshotInput({ cwd, paths = [] }) {
   const entries = Array.from(expandedPaths).sort().map((relativePath) => {
     const fullPath = path.resolve(cwd, relativePath);
     try {
+      const linkStat = fs.lstatSync(fullPath);
+      if (linkStat.isSymbolicLink()) {
+        return { path: relativePath, exists: true, symlink: fs.readlinkSync(fullPath) };
+      }
       const stat = fs.statSync(fullPath);
       if (!stat.isFile()) {
         return { path: relativePath, exists: false };
@@ -112,9 +118,9 @@ export function configIdentity(config) {
   };
 }
 
-export function packageVersion(cwd) {
+export function packageVersion() {
   try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
+    const pkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8'));
     return String(pkg.version || 'unknown');
   } catch {
     return 'unknown';

@@ -150,7 +150,7 @@ function checkRecord(name, result, timeoutMs) {
     status,
     elapsed_ms: result.duration_ms,
     command: result.command,
-    argv: result.argv,
+    argv: result.argv || [],
     timeout_ms: timeoutMs,
     exit_code: result.exit_code,
     signal: result.signal || null,
@@ -205,7 +205,7 @@ export function runDeterministicGates({
       config_identity: identity,
       config_digest: identity.digest,
       config_version: identity.version,
-      package_version: packageVersion(resolvedCwd),
+      package_version: packageVersion(),
       state_dir: externalStateDir,
     });
     return { gates: [], findings: [], traces: [], gateResult: staleResult };
@@ -334,7 +334,7 @@ export function runDeterministicGates({
     config_identity: identity,
     config_digest: identity.digest,
     config_version: identity.version,
-    package_version: packageVersion(resolvedCwd),
+    package_version: packageVersion(),
     state_dir: externalStateDir,
   });
 

@@ -155,6 +155,22 @@ test('config command overrides package.json script', () => {
   assert.equal(lintGate.status, 'pass');
 });
 
+test('allowed shell commands emit a schema-compatible argv array', () => {
+  const cwd = mkFixture({ typecheck: 'exit 0', lighthouse: 'exit 0' });
+  const result = runDeterministicGates({
+    mode: 'quick',
+    cwd,
+    config: defaultConfig({
+      allowUnsafeShellCommands: true,
+      commands: { lint: 'exit 0' },
+    }),
+    changedFiles: [],
+  });
+
+  assert.equal(result.gateResult.status, 'pass');
+  assert.deepEqual(result.gateResult.checks.find((check) => check.name === 'lint').argv, []);
+});
+
 test('typecheck fallback to npx tsc --noEmit when no script', () => {
   const cwd = mkFixture({
     lint: 'exit 0',

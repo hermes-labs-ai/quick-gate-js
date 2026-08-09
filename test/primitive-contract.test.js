@@ -96,7 +96,7 @@ test('evaluateGates returns gate-result/v1 without writing artifacts', () => {
   assert.equal(result.gateResult.version, 'gate-result/v1');
   assert.equal(result.gateResult.status, 'pass');
   assert.deepEqual(result.gateResult.checked_paths, ['package.json', 'src file.js']);
-  assert.equal(result.gateResult.package_version, '1.2.3');
+  assert.equal(result.gateResult.package_version, '0.2.3');
   assert.ok(result.gateResult.config_digest);
   assert.ok(result.gateResult.command_versions.lint.version);
   assert.equal(validateAgainstSchema('gate-result-v1.schema.json', result.gateResult).valid, true);
