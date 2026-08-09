@@ -64,13 +64,17 @@ export function snapshotInput({ cwd, paths = [] }) {
         try {
           const targetStat = fs.statSync(fullPath);
           if (targetStat.isFile()) {
-            const content = fs.readFileSync(fullPath);
-            return { ...entry, size: content.length, sha256: sha256(content) };
+            try {
+              const content = fs.readFileSync(fullPath);
+              return { ...entry, target_type: 'file', size: content.length, sha256: sha256(content) };
+            } catch {
+              return { ...entry, target_type: 'unreadable' };
+            }
           }
-        } catch {
-          // Preserve broken-link identity without claiming target bytes.
+          return { ...entry, target_type: targetStat.isDirectory() ? 'directory' : 'other' };
+        } catch (error) {
+          return { ...entry, target_type: error?.code === 'ENOENT' ? 'missing' : 'unreadable' };
         }
-        return entry;
       }
       const stat = fs.statSync(fullPath);
       if (!stat.isFile()) {
