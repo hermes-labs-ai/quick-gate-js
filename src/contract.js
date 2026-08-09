@@ -48,7 +48,8 @@ export function snapshotInput({ cwd, paths = [] }) {
   for (const requestedPath of requestedPaths) {
     const fullPath = path.join(cwd, requestedPath);
     const files = filesForSnapshot(fullPath);
-    for (const filePath of files.length > 0 ? files : [fullPath]) {
+    const candidates = files.length > 0 || isDirectory(fullPath) ? files : [fullPath];
+    for (const filePath of candidates) {
       const relativePath = safeRelativePath(cwd, filePath);
       if (relativePath) expandedPaths.add(relativePath);
     }
@@ -87,6 +88,14 @@ export function snapshotInput({ cwd, paths = [] }) {
     snapshotDigest: sha256(entries),
     entries,
   };
+}
+
+function isDirectory(candidate) {
+  try {
+    return fs.lstatSync(candidate).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 function filesForSnapshot(startPath) {
