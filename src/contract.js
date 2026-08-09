@@ -59,7 +59,17 @@ export function snapshotInput({ cwd, paths = [] }) {
     try {
       const linkStat = fs.lstatSync(fullPath);
       if (linkStat.isSymbolicLink()) {
-        return { path: relativePath, exists: true, symlink: fs.readlinkSync(fullPath) };
+        const entry = { path: relativePath, exists: true, symlink: fs.readlinkSync(fullPath) };
+        try {
+          const targetStat = fs.statSync(fullPath);
+          if (targetStat.isFile()) {
+            const content = fs.readFileSync(fullPath);
+            return { ...entry, size: content.length, sha256: sha256(content) };
+          }
+        } catch {
+          // Preserve broken-link identity without claiming target bytes.
+        }
+        return entry;
       }
       const stat = fs.statSync(fullPath);
       if (!stat.isFile()) {

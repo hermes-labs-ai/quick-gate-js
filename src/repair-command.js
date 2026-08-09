@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { runCommand } from './exec.js';
@@ -46,20 +47,38 @@ function computePatchLines(beforeMap, afterMap) {
 }
 
 function backupWorkspace(cwd, backupDir) {
+  fs.mkdirSync(backupDir, { recursive: true });
   if (hasRsync()) {
-    runCommand(`mkdir -p '${backupDir}' && rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${cwd}/' '${backupDir}/'`, { cwd, unsafeShell: true });
+    runCommand([
+      'rsync', '-a', '--delete',
+      '--exclude', '.git', '--exclude', 'node_modules', '--exclude', '.next', '--exclude', '.quick-gate',
+      `${cwd}${path.sep}`, `${backupDir}${path.sep}`,
+    ], { cwd });
   } else {
-    runCommand(`mkdir -p '${backupDir}' && cp -R '${cwd}/.' '${backupDir}/' 2>/dev/null; rm -rf '${backupDir}/.git' '${backupDir}/node_modules' '${backupDir}/.next' '${backupDir}/.quick-gate'`, { cwd, unsafeShell: true });
+    copyWorkspaceEntries(cwd, backupDir);
   }
 }
 
 function restoreWorkspace(cwd, backupDir) {
   if (hasRsync()) {
-    runCommand(`rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${backupDir}/' '${cwd}/'`, { cwd, unsafeShell: true });
+    runCommand([
+      'rsync', '-a', '--delete',
+      '--exclude', '.git', '--exclude', 'node_modules', '--exclude', '.next', '--exclude', '.quick-gate',
+      `${backupDir}${path.sep}`, `${cwd}${path.sep}`,
+    ], { cwd });
   } else {
-    const excludes = ['.git', 'node_modules', '.next', '.quick-gate'];
-    const excludeArgs = excludes.map((e) => `! -name '${e}'`).join(' ');
-    runCommand(`find '${backupDir}' -maxdepth 1 ${excludeArgs} ! -path '${backupDir}' -exec cp -R {} '${cwd}/' \\;`, { cwd, unsafeShell: true });
+    copyWorkspaceEntries(backupDir, cwd);
+  }
+}
+
+function copyWorkspaceEntries(source, destination) {
+  const excluded = new Set(['.git', 'node_modules', '.next', '.quick-gate']);
+  for (const name of fs.readdirSync(source)) {
+    if (excluded.has(name)) continue;
+    fs.cpSync(path.join(source, name), path.join(destination, name), {
+      recursive: true,
+      force: true,
+    });
   }
 }
 

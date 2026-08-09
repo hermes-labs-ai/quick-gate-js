@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { evaluateGates } from '../src/api.js';
 import { runCommand } from '../src/exec.js';
-import { stableStringify } from '../src/contract.js';
+import { snapshotInput, stableStringify } from '../src/contract.js';
 import { validateAgainstSchema } from '../src/schema.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -125,6 +125,18 @@ test('stale input is rejected before command execution', () => {
   assert.equal(result.gateResult.status, 'error');
   assert.equal(result.gateResult.errors[0].code, 'STALE_INPUT');
   assert.deepEqual(result.gateResult.checks, []);
+});
+
+test('snapshot binds symlink identity and target bytes', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-symlink-'));
+  fs.writeFileSync(path.join(cwd, 'target.txt'), 'first\n');
+  fs.symlinkSync('target.txt', path.join(cwd, 'link.txt'));
+  const first = snapshotInput({ cwd, paths: ['link.txt'] });
+  fs.writeFileSync(path.join(cwd, 'target.txt'), 'second\n');
+  const second = snapshotInput({ cwd, paths: ['link.txt'] });
+
+  assert.deepEqual(first.checkedPaths, ['link.txt']);
+  assert.notEqual(first.snapshotDigest, second.snapshotDigest);
 });
 
 test('stable serialization is independent of object key order', () => {

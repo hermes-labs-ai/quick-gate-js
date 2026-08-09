@@ -165,6 +165,22 @@ test('repair creates backup directories', () => {
   assert.ok(fs.existsSync(path.join(dir, '.quick-gate', 'backup-attempt-1')));
 });
 
+test('repair handles quoted external output paths without a shell', () => {
+  const dir = mkRepairFixture({ lintFails: true });
+  seedFailures(dir, { findingGate: 'lint' });
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "quick-gate-o'hara-"));
+
+  executeRepair({
+    input: '.quick-gate/failures.json',
+    maxAttempts: 1,
+    deterministicOnly: true,
+    cwd: dir,
+    outputDir,
+  });
+
+  assert.ok(fs.existsSync(path.join(outputDir, 'backup-attempt-1')));
+});
+
 test('repair respects time cap', () => {
   const dir = mkRepairFixture({ lintFails: true });
   seedFailures(dir, { findingGate: 'lint' });

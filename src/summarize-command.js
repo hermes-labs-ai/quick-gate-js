@@ -20,7 +20,7 @@ function actionForGate(gate) {
   return 'Reduce route-level performance/accessibility regressions and re-run lighthouse.';
 }
 
-function createMarkdown(failures, brief) {
+function createMarkdown(failures, brief, evidencePaths) {
   const lines = [];
   lines.push('# Quick Gate Agent Brief');
   lines.push('');
@@ -61,7 +61,7 @@ function createMarkdown(failures, brief) {
   lines.push('');
   lines.push('## Escalation conditions');
   lines.push('');
-  lines.push('- Escalate with reason code and evidence (`.quick-gate/failures.json`, `.quick-gate/run-metadata.json`) if unresolved.');
+  lines.push(`- Escalate with reason code and evidence (\`${evidencePaths.failures}\`, \`${evidencePaths.metadata}\`) if unresolved.`);
   lines.push('- Stop when no-improvement cap, patch budget, or time cap is hit.');
 
   return `${lines.join('\n')}\n`;
@@ -107,7 +107,10 @@ export function executeSummarize({ input, cwd = process.cwd(), outputDir }) {
     throw new Error(`agent-brief schema validation failed: ${JSON.stringify(validation.errors, null, 2)}`);
   }
 
-  const md = createMarkdown(failures, brief);
+  const md = createMarkdown(failures, brief, {
+    failures: path.resolve(cwd, input),
+    metadata: path.join(stateDir, 'run-metadata.json'),
+  });
   const briefJsonPath = path.join(stateDir, path.basename(AGENT_BRIEF_JSON_FILE));
   const briefMdPath = path.join(stateDir, path.basename(AGENT_BRIEF_MD_FILE));
   writeJsonFileSync(briefJsonPath, brief);
