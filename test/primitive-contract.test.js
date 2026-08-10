@@ -74,13 +74,13 @@ test('oversized output is capped with a truncation marker', () => {
 test('timeout terminates descendants in the command process group', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-timeout-'));
   const marker = path.join(dir, 'descendant survived.txt');
-  const childCode = `setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'survived'), 500)`;
+  const childCode = `process.on('SIGTERM', () => {}); setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'survived'), 700)`;
   const result = runCommand([
     process.execPath,
     '-e',
     `require('node:child_process').spawn(${JSON.stringify(process.execPath)}, ['-e', ${JSON.stringify(childCode)}], {stdio: 'ignore'}); setTimeout(() => {}, 5000)`,
   ], { cwd: dir, timeoutMs: 100 });
-  await new Promise((resolve) => setTimeout(resolve, 700));
+  await new Promise((resolve) => setTimeout(resolve, 900));
   assert.equal(result.timed_out, true);
   assert.equal(fs.existsSync(marker), false);
 });
@@ -125,6 +125,30 @@ test('stale input is rejected before command execution', () => {
   assert.equal(result.gateResult.status, 'error');
   assert.equal(result.gateResult.errors[0].code, 'STALE_INPUT');
   assert.deepEqual(result.gateResult.checks, []);
+});
+
+test('checked input mutation during a gate cannot return pass', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-mutating-gate-'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), JSON.stringify({ scripts: {} }));
+  fs.writeFileSync(path.join(cwd, 'sample.js'), 'before\n');
+  const config = {
+    source: 'provided',
+    policy: {},
+    commands: {
+      lint: [process.execPath, '-e', 'require("node:fs").writeFileSync("sample.js", "after\\n")'],
+      typecheck: [process.execPath, '-e', ''],
+      lighthouse: [process.execPath, '-e', ''],
+    },
+    lighthouse: { thresholds: {} },
+    allowUnsafeShellCommands: false,
+  };
+
+  const result = evaluateGates({ mode: 'quick', cwd, changedFiles: ['sample.js'], config });
+
+  assert.equal(result.gateResult.status, 'error');
+  assert.equal(result.gateResult.snapshot_changed, true);
+  assert.notEqual(result.gateResult.snapshot_digest_after, result.gateResult.snapshot_digest);
+  assert.equal(result.gateResult.errors.at(-1).code, 'CHECKED_INPUT_CHANGED');
 });
 
 test('snapshot binds symlink identity and target bytes', () => {

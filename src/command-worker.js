@@ -53,7 +53,23 @@ const stdout = capture(outputLimit);
 const stderr = capture(outputLimit);
 let timedOut = false;
 let timeoutKillTimer;
+let pendingClose;
 let finished = false;
+
+function emitResult(code, signal) {
+  if (finished) return;
+  finished = true;
+  process.stdout.write(JSON.stringify({
+    exit_code: typeof code === 'number' ? code : null,
+    signal: signal || null,
+    error_code: null,
+    timed_out: timedOut,
+    stdout: stdout.value(),
+    stderr: stderr.value(),
+    output_truncated: stdout.truncated || stderr.truncated,
+    duration_ms: Date.now() - startedAt,
+  }));
+}
 
 let child;
 try {
@@ -102,22 +118,19 @@ child.on('error', (error) => {
 const timer = setTimeout(() => {
   timedOut = true;
   terminateProcessTree(child, 'SIGTERM');
-  timeoutKillTimer = setTimeout(() => terminateProcessTree(child, 'SIGKILL'), 250);
+  timeoutKillTimer = setTimeout(() => {
+    timeoutKillTimer = null;
+    terminateProcessTree(child, 'SIGKILL');
+    if (pendingClose) emitResult(pendingClose.code, pendingClose.signal);
+  }, 250);
 }, timeoutMs);
 
 child.on('close', (code, signal) => {
   if (finished) return;
-  finished = true;
   clearTimeout(timer);
-  if (timeoutKillTimer) clearTimeout(timeoutKillTimer);
-  process.stdout.write(JSON.stringify({
-    exit_code: typeof code === 'number' ? code : null,
-    signal: signal || null,
-    error_code: null,
-    timed_out: timedOut,
-    stdout: stdout.value(),
-    stderr: stderr.value(),
-    output_truncated: stdout.truncated || stderr.truncated,
-    duration_ms: Date.now() - startedAt,
-  }));
+  if (timedOut && timeoutKillTimer) {
+    pendingClose = { code, signal };
+    return;
+  }
+  emitResult(code, signal);
 });

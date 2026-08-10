@@ -314,7 +314,21 @@ export function runDeterministicGates({
   }
 
   const outputTruncated = traces.some((trace) => trace.output_truncated);
-  const resultStatus = checks.some((check) => check.status === 'timeout')
+  const snapshotAfter = snapshotInput({
+    cwd: resolvedCwd,
+    paths: checkedPathsFor({ cwd: resolvedCwd, changedFiles, config: resolvedConfig }),
+  });
+  const snapshotChanged = snapshot.snapshotDigest !== snapshotAfter.snapshotDigest;
+  if (snapshotChanged) {
+    errors.push({
+      code: 'CHECKED_INPUT_CHANGED',
+      before: snapshot.snapshotDigest,
+      after: snapshotAfter.snapshotDigest,
+    });
+  }
+  const resultStatus = snapshotChanged
+    ? 'error'
+    : checks.some((check) => check.status === 'timeout')
     ? 'timeout'
     : checks.some((check) => ['missing', 'error'].includes(check.status))
       ? 'error'
@@ -336,6 +350,8 @@ export function runDeterministicGates({
     config_version: identity.version,
     package_version: packageVersion(),
     state_dir: externalStateDir,
+    snapshot_digest_after: snapshotAfter.snapshotDigest,
+    snapshot_changed: snapshotChanged,
   });
 
   return { gates, findings, traces, gateResult };
