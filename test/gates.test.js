@@ -118,6 +118,23 @@ test('missing command produces finding', () => {
   const finding = result.findings.find((f) => f.id === 'lint_missing_command');
   assert.ok(finding);
   assert.equal(finding.actual, 'missing');
+  assert.equal(result.gateResult.status, 'error');
+  assert.equal(result.gateResult.checks.find((check) => check.name === 'lint').status, 'missing');
+});
+
+test('missing executable status retains a repair-blocking finding', () => {
+  const cwd = mkFixture({ typecheck: 'exit 0', lighthouse: 'exit 0' });
+  const result = runDeterministicGates({
+    mode: 'quick',
+    cwd,
+    config: defaultConfig({ commands: { lint: ['quick-gate-command-that-does-not-exist'] } }),
+    changedFiles: [],
+  });
+
+  const lintCheck = result.gateResult.checks.find((check) => check.name === 'lint');
+  assert.equal(lintCheck.status, 'missing');
+  assert.equal(result.gateResult.status, 'error');
+  assert.ok(result.findings.some((finding) => finding.gate === 'lint'));
 });
 
 test('config command overrides package.json script', () => {
@@ -126,7 +143,7 @@ test('config command overrides package.json script', () => {
     typecheck: 'exit 0',
     lighthouse: 'exit 0',
   });
-  const config = defaultConfig({ commands: { lint: 'exit 0' } });
+  const config = defaultConfig({ commands: { lint: ['sh', '-c', 'exit 0'] } });
   const result = runDeterministicGates({
     mode: 'quick',
     cwd,
@@ -136,6 +153,22 @@ test('config command overrides package.json script', () => {
 
   const lintGate = result.gates.find((g) => g.name === 'lint');
   assert.equal(lintGate.status, 'pass');
+});
+
+test('allowed shell commands emit a schema-compatible argv array', () => {
+  const cwd = mkFixture({ typecheck: 'exit 0', lighthouse: 'exit 0' });
+  const result = runDeterministicGates({
+    mode: 'quick',
+    cwd,
+    config: defaultConfig({
+      allowUnsafeShellCommands: true,
+      commands: { lint: 'exit 0' },
+    }),
+    changedFiles: [],
+  });
+
+  assert.equal(result.gateResult.status, 'pass');
+  assert.deepEqual(result.gateResult.checks.find((check) => check.name === 'lint').argv, []);
 });
 
 test('typecheck fallback to npx tsc --noEmit when no script', () => {
@@ -153,7 +186,7 @@ test('typecheck fallback to npx tsc --noEmit when no script', () => {
   const tcGate = result.gates.find((g) => g.name === 'typecheck');
   assert.ok(tcGate);
   assert.ok(['pass', 'fail'].includes(tcGate.status));
-  const trace = result.traces.find((t) => t.command === 'npx tsc --noEmit');
+  const trace = result.traces.find((t) => t.command === 'npx --no-install tsc --noEmit');
   assert.ok(trace);
 });
 
@@ -175,7 +208,7 @@ test('lighthouse fallback to exit code finding when no assertion-results', () =>
   assert.equal(lhGate.status, 'fail');
   const finding = result.findings.find((f) => f.gate === 'lighthouse');
   assert.ok(finding);
-  assert.ok(finding.id.startsWith('lighthouse_exit_'));
+  assert.equal(finding.id, 'lighthouse_failure');
   assert.equal(finding.actual, 1);
 });
 

@@ -3,6 +3,10 @@
   "version": "0.2.3",
   "description": "JavaScript and TypeScript quality gate CLI with bounded auto-repair and escalation artifacts",
   "type": "module",
+  "exports": {
+    ".": "./src/api.js",
+    "./cli": "./src/cli.js"
+  },
   "bin": {
     "quick-gate": "src/cli.js"
   },

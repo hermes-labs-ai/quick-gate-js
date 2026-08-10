@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from './config.js';
 import { runCommand } from './exec.js';
@@ -12,7 +13,7 @@ import { hasRsync, hasGit } from './env-check.js';
 function diffSnapshot(cwd) {
   if (!hasGit()) return new Map();
   const diff = runCommand(
-    "git diff --numstat -- . ':(exclude).quick-gate' ':(exclude).next' ':(exclude).lighthouseci' ':(exclude)node_modules' ':(exclude)tmp'",
+    ['git', 'diff', '--numstat', '--', '.', ':(exclude).quick-gate', ':(exclude).next', ':(exclude).lighthouseci', ':(exclude)node_modules', ':(exclude)tmp'],
     { cwd },
   );
   const map = new Map();
@@ -46,24 +47,42 @@ function computePatchLines(beforeMap, afterMap) {
 }
 
 function backupWorkspace(cwd, backupDir) {
+  fs.mkdirSync(backupDir, { recursive: true });
   if (hasRsync()) {
-    runCommand(`mkdir -p '${backupDir}' && rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${cwd}/' '${backupDir}/'`, { cwd });
+    runCommand([
+      'rsync', '-a', '--delete',
+      '--exclude', '.git', '--exclude', 'node_modules', '--exclude', '.next', '--exclude', '.quick-gate',
+      `${cwd}${path.sep}`, `${backupDir}${path.sep}`,
+    ], { cwd });
   } else {
-    runCommand(`mkdir -p '${backupDir}' && cp -R '${cwd}/.' '${backupDir}/' 2>/dev/null; rm -rf '${backupDir}/.git' '${backupDir}/node_modules' '${backupDir}/.next' '${backupDir}/.quick-gate'`, { cwd });
+    copyWorkspaceEntries(cwd, backupDir);
   }
 }
 
 function restoreWorkspace(cwd, backupDir) {
   if (hasRsync()) {
-    runCommand(`rsync -a --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.quick-gate' '${backupDir}/' '${cwd}/'`, { cwd });
+    runCommand([
+      'rsync', '-a', '--delete',
+      '--exclude', '.git', '--exclude', 'node_modules', '--exclude', '.next', '--exclude', '.quick-gate',
+      `${backupDir}${path.sep}`, `${cwd}${path.sep}`,
+    ], { cwd });
   } else {
-    const excludes = ['.git', 'node_modules', '.next', '.quick-gate'];
-    const excludeArgs = excludes.map((e) => `! -name '${e}'`).join(' ');
-    runCommand(`find '${backupDir}' -maxdepth 1 ${excludeArgs} ! -path '${backupDir}' -exec cp -R {} '${cwd}/' \\;`, { cwd });
+    copyWorkspaceEntries(backupDir, cwd);
   }
 }
 
-function runRepairActions(cwd, failures, policy, deterministicOnly) {
+function copyWorkspaceEntries(source, destination) {
+  const excluded = new Set(['.git', 'node_modules', '.next', '.quick-gate']);
+  for (const name of fs.readdirSync(source)) {
+    if (excluded.has(name)) continue;
+    fs.cpSync(path.join(source, name), path.join(destination, name), {
+      recursive: true,
+      force: true,
+    });
+  }
+}
+
+function runRepairActions(cwd, failures, policy, deterministicOnly, stateDir) {
   const attempted = [];
   let currentFailures = failures;
 
@@ -74,9 +93,10 @@ function runRepairActions(cwd, failures, policy, deterministicOnly) {
       mode: currentFailures.mode,
       changedFiles: currentFailures.changed_files || [],
       cwd,
+      artifactDir: stateDir,
     });
-    currentFailures = readJsonFileSync(path.join(cwd, '.quick-gate', 'failures.json'));
-    executeSummarize({ input: '.quick-gate/failures.json', cwd });
+    currentFailures = readJsonFileSync(path.join(stateDir, 'failures.json'));
+    executeSummarize({ input: path.join(stateDir, 'failures.json'), cwd, outputDir: stateDir });
 
     attempted.push({
       strategy: 'deterministic_prefix_rerun',
@@ -150,7 +170,16 @@ function runRepairActions(cwd, failures, policy, deterministicOnly) {
   };
 }
 
-export function executeRepair({ input, maxAttempts, deterministicOnly = false, cwd = process.cwd() }) {
+export function executeRepair({ input, maxAttempts, deterministicOnly = false, cwd = process.cwd(), outputDir }) {
+  const stateDir = path.resolve(outputDir || path.join(cwd, '.quick-gate'));
+  if (outputDir) {
+    const relativeState = path.relative(path.resolve(cwd), stateDir);
+    const insideWorktree = relativeState === ''
+      || (!relativeState.startsWith(`..${path.sep}`) && relativeState !== '..' && !path.isAbsolute(relativeState));
+    if (insideWorktree) {
+      throw new Error('repair --output-dir must be outside the project worktree');
+    }
+  }
   const config = loadConfig(cwd);
   const policy = {
     maxAttempts: Number(maxAttempts || config.policy.maxAttempts || DEFAULT_POLICY.maxAttempts),
@@ -172,15 +201,15 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
         reason_code: ESCALATION_CODES.UNKNOWN_BLOCKER,
         message: `Time cap reached (${policy.timeCapMs}ms).`,
       };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+      writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
       return escalation;
     }
 
-    const backupDir = path.join(cwd, '.quick-gate', `backup-attempt-${attempt}`);
+    const backupDir = path.join(stateDir, `backup-attempt-${attempt}`);
     backupWorkspace(cwd, backupDir);
 
     const preActionDiff = diffSnapshot(cwd);
-    const repairResult = runRepairActions(cwd, failures, policy, deterministicOnly);
+    const repairResult = runRepairActions(cwd, failures, policy, deterministicOnly, stateDir);
     const repairActions = repairResult.attempted;
     const failuresForRerun = repairResult.currentFailures;
     const postActionDiff = diffSnapshot(cwd);
@@ -200,7 +229,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
           post_action_diff_files: postActionDiff.size,
         },
       };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+      writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
       return escalation;
     }
 
@@ -216,7 +245,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
         actions: repairActions,
       });
       const result = { status: 'pass', attempts };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'repair-report.json'), result);
+      writeJsonFileSync(path.join(stateDir, 'repair-report.json'), result);
       return result;
     }
 
@@ -224,9 +253,10 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
       mode: failuresForRerun.mode,
       changedFiles: failuresForRerun.changed_files || [],
       cwd,
+      artifactDir: stateDir,
     });
-    failures = readJsonFileSync(path.join(cwd, '.quick-gate', 'failures.json'));
-    executeSummarize({ input: '.quick-gate/failures.json', cwd });
+    failures = readJsonFileSync(path.join(stateDir, 'failures.json'));
+    executeSummarize({ input: path.join(stateDir, 'failures.json'), cwd, outputDir: stateDir });
 
     const currentCount = failures.findings.length;
     const improved = currentCount < previousCount;
@@ -245,7 +275,7 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
 
     if (rerun.status === 'pass') {
       const result = { status: 'pass', attempts };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'repair-report.json'), result);
+      writeJsonFileSync(path.join(stateDir, 'repair-report.json'), result);
       return result;
     }
 
@@ -268,11 +298,11 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
         message: `No measurable improvement for ${noImprovement} consecutive attempt(s).`,
         evidence: {
           attempts,
-          latest_failures_path: '.quick-gate/failures.json',
-          latest_metadata_path: '.quick-gate/run-metadata.json',
+          latest_failures_path: path.join(stateDir, 'failures.json'),
+          latest_metadata_path: path.join(stateDir, 'run-metadata.json'),
         },
       };
-      writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+      writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
       return escalation;
     }
   }
@@ -282,9 +312,9 @@ export function executeRepair({ input, maxAttempts, deterministicOnly = false, c
     reason_code: ESCALATION_CODES.UNKNOWN_BLOCKER,
     message: `Attempts exhausted (${policy.maxAttempts}).`,
     evidence: {
-      latest_failures_path: '.quick-gate/failures.json',
+      latest_failures_path: path.join(stateDir, 'failures.json'),
     },
   };
-  writeJsonFileSync(path.join(cwd, '.quick-gate', 'escalation.json'), escalation);
+  writeJsonFileSync(path.join(stateDir, 'escalation.json'), escalation);
   return escalation;
 }

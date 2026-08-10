@@ -1,6 +1,7 @@
 export const QUICK_GATE_DIR = '.quick-gate';
 export const FAILURES_FILE = '.quick-gate/failures.json';
 export const RUN_METADATA_FILE = '.quick-gate/run-metadata.json';
+export const GATE_RESULT_FILE = 'gate-result.json';
 export const AGENT_BRIEF_MD_FILE = '.quick-gate/agent-brief.md';
 export const AGENT_BRIEF_JSON_FILE = '.quick-gate/agent-brief.json';
 

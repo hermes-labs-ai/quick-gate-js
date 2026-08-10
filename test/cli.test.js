@@ -35,6 +35,12 @@ test('-h exits 0', () => {
   assert.equal(result.code, 0);
 });
 
+test('--version exits 0 with the package version', () => {
+  const result = runCli(['--version']);
+  assert.equal(result.code, 0);
+  assert.match(result.stdout, /^quick-gate 0\.2\.3\s*$/);
+});
+
 test('no args exits 0 and shows usage', () => {
   const result = runCli([]);
   assert.equal(result.code, 0);
@@ -76,6 +82,7 @@ test('canary remains an input alias and emits canonical quick artifacts', () => 
     },
   }));
   fs.writeFileSync(path.join(cwd, 'changed-files.txt'), 'src/index.js\n');
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-output-'));
 
   const result = runCli([
     'run',
@@ -83,11 +90,15 @@ test('canary remains an input alias and emits canonical quick artifacts', () => 
     'canary',
     '--changed-files',
     'changed-files.txt',
+    '--output-dir',
+    outputDir,
   ], { cwd });
 
   assert.equal(result.code, 0, result.stderr);
-  const failures = JSON.parse(fs.readFileSync(path.join(cwd, '.quick-gate', 'failures.json')));
-  const metadata = JSON.parse(fs.readFileSync(path.join(cwd, '.quick-gate', 'run-metadata.json')));
+  const failures = JSON.parse(fs.readFileSync(path.join(outputDir, 'failures.json')));
+  const metadata = JSON.parse(fs.readFileSync(path.join(outputDir, 'run-metadata.json')));
+  assert.ok(fs.existsSync(path.join(outputDir, 'gate-result.json')));
+  assert.equal(fs.existsSync(path.join(cwd, '.quick-gate')), false);
   assert.equal(failures.mode, 'quick');
   assert.equal(metadata.mode, 'quick');
   assert.equal(failures.gates.find((gate) => gate.name === 'build').status, 'skipped');

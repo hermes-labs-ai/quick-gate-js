@@ -165,6 +165,22 @@ test('repair creates backup directories', () => {
   assert.ok(fs.existsSync(path.join(dir, '.quick-gate', 'backup-attempt-1')));
 });
 
+test('repair handles quoted external output paths without a shell', () => {
+  const dir = mkRepairFixture({ lintFails: true });
+  seedFailures(dir, { findingGate: 'lint' });
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "quick-gate-o'hara-"));
+
+  executeRepair({
+    input: '.quick-gate/failures.json',
+    maxAttempts: 1,
+    deterministicOnly: true,
+    cwd: dir,
+    outputDir,
+  });
+
+  assert.ok(fs.existsSync(path.join(outputDir, 'backup-attempt-1')));
+});
+
 test('repair respects time cap', () => {
   const dir = mkRepairFixture({ lintFails: true });
   seedFailures(dir, { findingGate: 'lint' });
@@ -344,4 +360,43 @@ test('lighthouse-only findings skip model patch', () => {
   });
 
   assert.equal(result.status, 'escalated');
+});
+
+test('repair keeps state in an explicit external output directory', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-external-cwd-'));
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-external-state-'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"fixture","scripts":{}}\n');
+  const failuresPath = path.join(outputDir, 'failures.json');
+  fs.writeFileSync(
+    failuresPath,
+    JSON.stringify({ mode: 'quick', changed_files: [], findings: [] }),
+  );
+
+  const result = executeRepair({
+    input: failuresPath,
+    cwd,
+    outputDir,
+    deterministicOnly: true,
+  });
+
+  assert.equal(result.status, 'pass');
+  assert.equal(fs.existsSync(path.join(outputDir, 'repair-report.json')), true);
+  assert.equal(fs.existsSync(path.join(cwd, '.quick-gate')), false);
+});
+
+test('repair rejects an explicit output directory inside the worktree', () => {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-internal-cwd-'));
+  fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"fixture","scripts":{}}\n');
+  const outputDir = path.join(cwd, 'qg-state');
+  fs.mkdirSync(outputDir);
+  const failuresPath = path.join(outputDir, 'failures.json');
+  fs.writeFileSync(
+    failuresPath,
+    JSON.stringify({ mode: 'quick', changed_files: [], findings: [] }),
+  );
+
+  assert.throws(
+    () => executeRepair({ input: failuresPath, cwd, outputDir, deterministicOnly: true }),
+    /must be outside the project worktree/,
+  );
 });

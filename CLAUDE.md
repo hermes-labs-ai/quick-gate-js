@@ -25,9 +25,9 @@ src/
   config.js         # Loads quick-gate.config.js or package.json [quick-gate] section
 ```
 
-Gate resolution: reads target project's `package.json` scripts → matches gate name (lint, typecheck, test) → falls back to sensible defaults (`npx tsc --noEmit`, etc.).
+Gate resolution: reads target project's `package.json` scripts → matches gate name (lint, typecheck, build, lighthouse) → falls back to no-install argv commands (`npx --no-install tsc --noEmit`, etc.).
 
-All artifacts written to `.quick-gate/` directory.
+The embeddable API does not write artifacts. CLI `run` artifacts go to an external temporary directory by default or an explicit `--output-dir`.
 
 ## Key Constraints
 
@@ -44,4 +44,4 @@ All artifacts written to `.quick-gate/` directory.
 - `scripts/` directory contains benchmark tools — excluded from npm via `.npmignore`
 - Gate command resolution checks `package.json` scripts first, config second, defaults last
 - Repair loop has three abort conditions: no improvement (2x), patch budget (150 lines), time cap (20min)
-- `.quick-gate/` output dir should be gitignored in target projects
+- Explicit repair artifacts under `.quick-gate/` should be gitignored in target projects

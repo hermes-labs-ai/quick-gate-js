@@ -1,0 +1,238 @@
+{
+  "schema": "gate-result-fixtures/v1",
+  "cases": [
+    {
+      "name": "minimal-pass",
+      "valid": true,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "pass",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [
+          {
+            "name": "lint",
+            "status": "pass",
+            "argv": ["ruff", "check", "."],
+            "elapsed_ms": 1,
+            "timed_out": false,
+            "output_truncated": false
+          }
+        ],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 1,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "timeout-with-legacy-version",
+      "valid": true,
+      "value": {
+        "schema": "gate-result/v1",
+        "version": "gate-result/v1",
+        "status": "timeout",
+        "snapshot_digest": "def456",
+        "checked_paths": [
+          "src/example.py"
+        ],
+        "checks": [
+          {
+            "name": "test",
+            "status": "timeout",
+            "argv": ["pytest"],
+            "elapsed_ms": 50,
+            "timed_out": true,
+            "output_truncated": false
+          },
+          {
+            "name": "build",
+            "status": "skipped",
+            "argv": [],
+            "elapsed_ms": 0,
+            "timed_out": false,
+            "output_truncated": false
+          }
+        ],
+        "findings": [],
+        "command_versions": {
+          "python": "Python 3"
+        },
+        "elapsed_ms": 51,
+        "output_truncated": false,
+        "errors": [
+          "test timed out"
+        ]
+      }
+    },
+    {
+      "name": "integral-number-fields",
+      "valid": true,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "pass",
+        "snapshot_digest": "numeric",
+        "checked_paths": [],
+        "checks": [
+          {
+            "name": "lint",
+            "status": "pass",
+            "argv": ["ruff"],
+            "elapsed_ms": 1.0,
+            "exit_code": 0.0,
+            "timed_out": false,
+            "output_truncated": false
+          }
+        ],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 1.0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "missing-schema",
+      "valid": false,
+      "value": {
+        "status": "pass",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "invalid-result-status",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "skipped",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "invalid-check-status",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "fail",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [
+          {
+            "name": "lint",
+            "status": "blocked"
+          }
+        ],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "null-deprecated-version",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "version": null,
+        "status": "pass",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "invalid-snapshot-changed",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "pass",
+        "snapshot_digest": "abc123",
+        "snapshot_changed": "no",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "negative-check-elapsed-ms",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "fail",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [
+          {
+            "name": "lint",
+            "status": "fail",
+            "elapsed_ms": -1
+          }
+        ],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "non-string-command-version",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "pass",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {
+          "ruff": 123
+        },
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "name": "invalid-error-item",
+      "valid": false,
+      "value": {
+        "schema": "gate-result/v1",
+        "status": "error",
+        "snapshot_digest": "abc123",
+        "checked_paths": [],
+        "checks": [],
+        "findings": [],
+        "command_versions": {},
+        "elapsed_ms": 0,
+        "output_truncated": false,
+        "errors": [123]
+      }
+    }
+  ]
+}

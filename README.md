@@ -1,137 +1,175 @@
-# quick-gate-js is a deterministic JS/TS quality gate
+# Quick Gate
 
-quick-gate-js is a deterministic JS/TS quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one fail-fast result, with bounded auto-repair and structured escalation evidence.
-
-> **Repo `quick-gate-js`, npm package `quick-gate`.** Install the CLI from npm
-> and use the canonical `quick|full` mode names shown below.
-
-JavaScript and TypeScript CI failures are noisy, tool-specific, and expensive to triage when ESLint, TypeScript, build steps, and Lighthouse all fail in different ways. Quick Gate turns those checks into one deterministic JS/TS quality gate with bounded auto-repair and structured escalation evidence.
-
-- "The PR failed, but I have to piece together ESLint, TypeScript, build, and Lighthouse output by hand."
-- "We want fail-fast frontend CI, not another dashboard."
-- "Auto-fix should stop when it stops helping instead of chewing through the repo."
-- "If repair cannot finish, I want a clean escalation artifact that an engineer or agent can actually use."
-
-```bash
-npm install -g quick-gate@0.2.3
-```
-
-```bash
-quick-gate --help
-```
-
-```text
-Quick Gate v0.2.3
-
-Commands:
-  quick-gate run --mode quick|full --changed-files <path>
-  quick-gate summarize --input .quick-gate/failures.json
-  quick-gate repair --input .quick-gate/failures.json [--max-attempts 3] [--deterministic-only]
-```
-
-**When To Use It**
-
-Use Quick Gate when you want one deterministic CI gate over JavaScript or TypeScript project checks, optional bounded repair, and machine-readable escalation artifacts for follow-up work.
-
-**When Not To Use It**
-
-Do not use Quick Gate as a generic lint dashboard, a semantic code-repair engine, or a replacement for your underlying ESLint, TypeScript, build, or Lighthouse setup.
-
-![quick-gate preview](assets/preview.png)
-
-[![npm version](https://img.shields.io/npm/v/quick-gate)](https://www.npmjs.com/package/quick-gate)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 [![CI](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-Deterministic quality gate CLI for JavaScript and TypeScript projects with bounded auto-repair and explicit escalation evidence. Works with Next.js, React, Vue, Svelte, Angular, or any Node.js project with TypeScript.
+Quick Gate turns noisy JavaScript and TypeScript checks into one deterministic CI result with structured findings and bounded repair/escalation artifacts.
 
-## Quick Start
+When lint, typechecking, builds, and Lighthouse assertions fail independently, a developer has to reconstruct the state of a change from several tools and logs. Quick Gate runs the checks as one explicit gate, records what it checked and how each command ended, and gives the next engineer or agent a bounded evidence packet to act on.
 
-Requires **Node.js >= 18** and a project with dependencies installed (`npm ci`).
+## First success
+
+Quick Gate requires Node.js 18 or newer and a project whose dependencies are already installed. From this repository, the verified setup is:
 
 ```bash
-# From your project directory:
-npx quick-gate@0.2.3 run --mode quick --changed-files <path>
+git clone https://github.com/hermes-labs-ai/quick-gate-js.git
+cd quick-gate-js
+npm install
+npx --no-install quick-gate --help
+```
 
-# Or install globally:
+From the JavaScript or TypeScript project you want to check, install Quick Gate as a development dependency and use the local binary:
+
+```bash
+npm install --save-dev quick-gate
+
+QG_CHANGED="$(mktemp)"
+QG_OUTPUT="$(mktemp -d)"
+printf 'src/app.ts\n' > "$QG_CHANGED"
+npx --no-install quick-gate run \
+  --mode quick \
+  --changed-files "$QG_CHANGED" \
+  --output-dir "$QG_OUTPUT"
+```
+
+The changed-files input is either a newline-delimited file or a JSON array. The commands above assume your project provides the underlying checks; if a check is not configured or available, Quick Gate reports that as a finding instead of inventing a result.
+
+The repository metadata currently describes version `0.2.3`. The live npm registry currently resolves `quick-gate` to `0.2.1`, so the source-checkout path above is the reproducible path for this checkout until the package release surface is synchronized. The intended exact-version command after that release is:
+
+```bash
 npm install -g quick-gate@0.2.3
-quick-gate --help
 ```
 
-Create a changed-files list (newline-delimited or JSON array):
+## What it runs
+
+Quick Gate is a coordinator around the commands already defined by your project. It does not replace ESLint, TypeScript, your build, or Lighthouse.
+
+| Mode | Checks |
+| --- | --- |
+| `quick` | lint, typecheck, and Lighthouse |
+| `full` | lint, typecheck, Lighthouse, and build |
+
+The CLI requires an explicit mode. In a project with matching npm scripts, Quick Gate uses `npm run lint`, `npm run typecheck`, `npm run build`, and an available Lighthouse script. You can override commands in `quick-gate.config.json`. If no `typecheck` script exists, it tries `npx --no-install tsc --noEmit`; if no Lighthouse script exists, the Lighthouse fallback requires an explicit output directory so its filesystem results have a known home.
+
+Every run records `pass`, `fail`, `timeout`, `missing`, `error`, or `skipped` checks, command traces, exit and timeout information, findings, command versions, a snapshot digest for the checked paths, and whether output was truncated. A run exits `0` when the gate passes and `1` otherwise.
+
+## Artifacts and output directories
+
+`run` writes artifacts to an external temporary directory by default. The CLI prints the run result and uses a directory named like `quick-gate-run-*` under the operating system temporary directory. Nothing is implicitly added to the reviewed worktree.
+
+Choose a directory explicitly when CI or another process needs a stable path. The following example continues the `QG_OUTPUT` shell variables from First success:
 
 ```bash
-echo "app/page.tsx" > /tmp/changed.txt
-quick-gate run --mode quick --changed-files /tmp/changed.txt
+npx --no-install quick-gate run \
+  --mode quick \
+  --changed-files "$QG_CHANGED" \
+  --output-dir "$QG_OUTPUT"
 ```
 
-Existing automation may continue to pass `--mode canary`; Quick Gate treats it
-as a backward-compatible alias and records the canonical mode `quick` in output
-artifacts. New commands and configurations should use `quick`.
+An explicit run directory contains:
 
-## What It Does
+| File | Purpose |
+| --- | --- |
+| `failures.json` | Run status, changed files, gate statuses, and structured findings |
+| `run-metadata.json` | Timing, configuration source, command traces, and artifact location |
+| `gate-result.json` | Validated `gate-result/v1` result |
 
-Quick Gate runs up to four deterministic quality gates on your project. In **quick** mode (default): lint + typecheck + lighthouse. In **full** mode: all four including build.
-
-1. **lint** -- runs your ESLint config
-2. **typecheck** -- runs TypeScript compiler
-3. **build** -- runs production build (full mode only)
-4. **lighthouse** -- runs Lighthouse CI assertions
-
-When gates fail, it produces structured evidence (not just exit codes) and optionally runs a bounded repair loop that:
-- Applies deterministic fixes first (eslint --fix on scoped files)
-- Optionally uses local LLM models (via Ollama) for model-assisted patches
-- Enforces hard limits on attempts, patch size, and wall-clock time
-- Escalates with machine-readable evidence when it can't resolve
-
-## Commands
+The following commands have separate, legacy worktree behavior:
 
 ```bash
-# Run quality gates
-quick-gate run --mode quick|full --changed-files <path>
+npx --no-install quick-gate summarize \
+  --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT"
 
-# Generate agent brief from failures
-quick-gate summarize --input .quick-gate/failures.json
-
-# Bounded repair loop
-quick-gate repair --input .quick-gate/failures.json [--max-attempts 3] [--deterministic-only]
+npx --no-install quick-gate repair \
+  --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT" \
+  --deterministic-only
 ```
 
-## Artifacts
+When `--output-dir` is provided, `summarize` and `repair` keep their reports, rerun artifacts, escalation, and backup directories in that same external directory. Without it, they retain the legacy `.quick-gate/` behavior. Repair may modify project files, so inspect the diff before accepting changes.
 
-Generated in your project under `.quick-gate/`:
+## The next useful command
 
-| File | Description |
-|------|-------------|
-| `failures.json` | Structured findings with severity, thresholds, evidence |
-| `run-metadata.json` | Gate execution traces (commands, stdout, stderr) |
-| `agent-brief.json` | Priority actions + retry policy for downstream agents |
-| `agent-brief.md` | Human-readable summary |
-| `repair-report.json` | Repair attempt history (on success) |
-| `escalation.json` | Escalation reason + evidence (when repair fails) |
+After a failed run, turn its findings into prioritized human- and agent-readable actions:
 
-## Repair Policy
+```bash
+npx --no-install quick-gate summarize \
+  --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT"
+```
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| max attempts | 3 | Total repair attempts before escalation |
-| max patch lines | 150 | Per-attempt patch size budget |
-| no-improvement abort | 2 | Consecutive no-improvement attempts before abort |
-| time cap | 20 min | Wall-clock limit for entire repair loop |
+For repair, start with deterministic-only mode. It can apply scoped ESLint fixes, rerun the gate, and escalate when it cannot make bounded progress. Model-assisted repair is optional and only runs when Ollama is available and deterministic-only mode is not requested.
 
-Escalation reason codes: `NO_IMPROVEMENT`, `PATCH_BUDGET_EXCEEDED`, `ARCHITECTURAL_CHANGE_REQUIRED`, `FLAKY_EVALUATOR`, `UNKNOWN_BLOCKER`
+```bash
+npx --no-install quick-gate repair \
+  --input "$QG_OUTPUT/failures.json" \
+  --output-dir "$QG_OUTPUT" \
+  --max-attempts 3 \
+  --deterministic-only
+```
 
-## Model-Assisted Repair (Optional)
+Repair exits `0` on a pass and `2` when it escalates. Its default policy is three attempts, a 150-line patch budget per attempt, a two-attempt no-improvement cap, and a 20-minute wall-clock cap. Escalation reason codes include `NO_IMPROVEMENT`, `PATCH_BUDGET_EXCEEDED`, `ARCHITECTURAL_CHANGE_REQUIRED`, `FLAKY_EVALUATOR`, and `UNKNOWN_BLOCKER`.
 
-Requires [Ollama](https://ollama.com) installed locally. Without Ollama, Quick Gate still works -- it runs deterministic fixes only and escalates what it can't resolve.
+## Embeddable API
 
-With Ollama:
-- **Hint model** (default: `qwen2.5:1.5b`): Generates repair hints
-- **Patch model** (default: `mistral:7b`): Generates scoped edit plans
-- Safety: edit plans are scored for relevance and enforced against patch-line budget before apply
+Use the API when an application needs the structured evaluation result without Quick Gate writing its own artifact files:
 
-Environment overrides:
+```js
+import { evaluateGates } from 'quick-gate';
+
+const { gateResult, findings } = evaluateGates({
+  mode: 'quick',
+  cwd: process.cwd(),
+  changedFiles: ['src/app.ts'],
+});
+
+console.log(gateResult.status, findings);
+```
+
+`evaluateGates` returns a `gate-result/v1` result and does not write Quick Gate artifacts or invoke repair. It still executes the configured project commands, so those commands remain responsible for their own behavior and side effects. The result is an evaluation of the configured checks and captured inputs—not a universal correctness proof.
+
+## The shared result contract
+
+The `gate-result/v1` contract gives downstream tooling a common envelope for:
+
+- overall `pass`, `fail`, `timeout`, or `error` status;
+- checked paths and a snapshot digest;
+- per-gate check status, timing, command, timeout, and exit information;
+- structured findings and command-version information; and
+- truncation, error, configuration, package, and state-directory metadata when available.
+
+The repository validates the emitted contract against [`schemas/gate-result-v1.schema.json`](schemas/gate-result-v1.schema.json). The contract standardizes evidence shape; it does not make the underlying lint, typecheck, build, or Lighthouse evaluator correct, complete, or secure.
+
+## Configuration
+
+Create `quick-gate.config.json` in the project root when the default command discovery is not enough:
+
+```json
+{
+  "commands": {
+    "lint": ["npm", "run", "lint"],
+    "typecheck": ["npm", "run", "typecheck"],
+    "build": ["npm", "run", "build"],
+    "lighthouse": ["npm", "run", "ci:lighthouse"]
+  },
+  "policy": {
+    "maxAttempts": 3,
+    "maxPatchLines": 150,
+    "abortOnNoImprovement": 2,
+    "timeCapMs": 1200000,
+    "commandTimeoutMs": 120000,
+    "gateTimeoutMs": 300000,
+    "outputCapBytes": 65536
+  },
+  "allowUnsafeShellCommands": false
+}
+```
+
+Prefer argv arrays. Commands run with `shell: false` by default, and command strings are rejected unless `allowUnsafeShellCommands` is explicitly enabled. Quick Gate's own fallback calls use `npx --no-install`; it does not silently install missing project packages.
+
+Environment variables for optional Ollama repair are:
 
 ```bash
 QUICK_GATE_HINT_MODEL=qwen3:4b
@@ -140,19 +178,22 @@ QUICK_GATE_MODEL_TIMEOUT_MS=60000
 QUICK_GATE_ALLOW_HINT_ONLY_PATCH=0
 ```
 
-## GitHub Action
+Without Ollama, Quick Gate still runs deterministic gates and deterministic repair. When enabled, the model adapter invokes the local `ollama` command and provides bounded snippets of findings and selected files to it; configure and secure that local service according to your environment.
 
-Add Quick Gate to any PR workflow with one step:
+## GitHub Actions
+
+For a direct workflow, keep the changed-file list and artifacts outside the checkout and make the output directory explicit:
 
 ```yaml
-# .github/workflows/quick-gate.yml
 name: Quick Gate
+
 on:
   pull_request:
     branches: [main]
+
 permissions:
   contents: read
-  pull-requests: write
+
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
@@ -161,51 +202,52 @@ jobs:
         with:
           fetch-depth: 0
       - run: npm ci
-      - uses: hermes-labs-ai/quick-gate-js/.github/actions/quick-gate@main
-        with:
-          mode: quick
-          repair: "true"
-          post-comment: "true"
+      - name: Collect changed files
+        run: git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.sha }}" > "$RUNNER_TEMP/quick-gate-changed.txt"
+      - name: Run Quick Gate
+        run: >-
+          npx --no-install quick-gate run
+          --mode quick
+          --changed-files "$RUNNER_TEMP/quick-gate-changed.txt"
+          --output-dir "$RUNNER_TEMP/quick-gate"
 ```
 
-This will:
-- Detect changed files from the PR diff
-- Run lint, typecheck, and Lighthouse gates
-- Attempt deterministic repair (eslint --fix) on failures
-- Post a structured findings comment on the PR
-- Upload `.quick-gate/` artifacts for inspection
+The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml). It executes the action checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
 
-No Ollama required -- CI runs in deterministic-only mode by default.
+## Safety, privacy, and limits
 
-## Configuration
+Quick Gate is a bounded evidence and repair coordinator. It does not promise:
 
-Create `quick-gate.config.json` in your project root to override defaults:
+- universal correctness, complete coverage, or a security guarantee;
+- that a passing result means the application is production-ready;
+- semantic repair, architectural changes, or a useful fix for every failure;
+- automatic merge, release, or deployment authority; or
+- hidden package installation or hidden network access.
 
-```json
-{
-  "commands": {
-    "lint": "npm run lint",
-    "typecheck": "npm run typecheck",
-    "build": "npm run build",
-    "lighthouse": "npm run ci:lighthouse"
-  },
-  "policy": {
-    "maxAttempts": 3,
-    "maxPatchLines": 150,
-    "abortOnNoImprovement": 2,
-    "timeCapMs": 1200000
-  }
-}
+The underlying project commands can have their own network access and side effects. Command output, stderr, paths, and selected failure context can be written to artifacts. Treat artifacts as potentially sensitive and avoid uploading them to third parties without review. The optional model-assisted path calls local Ollama only when enabled; it is not a hosted model service built into Quick Gate.
+
+`repair` is the mutating command: deterministic ESLint repair and accepted model edit plans can change files, with bounded attempts and backups under `.quick-gate/`. Review `git diff`, the repair report, and any escalation evidence before committing. For security reports, see [`SECURITY.md`](SECURITY.md).
+
+## Troubleshooting
+
+- **`run requires --mode quick|full`** — pass `--mode quick` or `--mode full`; the CLI does not infer a mode.
+- **Missing-command findings** — add the corresponding npm script or configure an argv command in `quick-gate.config.json`.
+- **`EXTERNAL_STATE_DIR_REQUIRED` for Lighthouse** — pass `--output-dir /absolute/path`, or configure a Lighthouse script that writes its own results.
+- **`npx --no-install` cannot find `tsc` or `lhci`** — install the project dependency first; Quick Gate will not fetch it for you.
+- **No `.quick-gate` directory after `run`** — this is expected unless you explicitly set `--output-dir .quick-gate`; the default is external temporary storage.
+- **`canary` appears in older automation** — it remains accepted as a backward-compatible alias for `quick` and is recorded canonically as `quick`. New commands should use `quick`.
+
+Use `quick-gate --version` for the installed package version and `quick-gate --help` for usage. The version is also recorded in package metadata and run artifacts.
+
+## Development and contribution
+
+```bash
+npm install
+npm test
 ```
 
-## License
-
-Apache 2.0 -- See [LICENSE](LICENSE) for details.
-
----
+The test suite exercises the CLI, gate execution, artifact contracts, configuration, bounded repair, and argv safety. Please keep changes focused, add tests for behavior changes, and see [`CONTRIBUTING.md`](CONTRIBUTING.md) for repository conventions. The project is licensed under [Apache License 2.0](LICENSE).
 
 ## About Hermes Labs
 
-[Hermes Labs](https://hermes-labs.ai) is an AI reliability engineering studio for product and engineering teams shipping production agents and LLM applications. We find the structural AI failures standard evals miss, then harden retrieval, memory, agents, and the language layers around production AI systems with runtime controls and defensible evidence.
-
-Browse the [open-source catalog](https://hermes-labs.ai/open-source) or contact [roli@hermes-labs.ai](mailto:roli@hermes-labs.ai).
+[Hermes Labs](https://hermes-labs.ai) builds reliability tooling for teams shipping production agents and AI applications. Quick Gate is an open-source JavaScript/TypeScript quality-gate utility from that work.

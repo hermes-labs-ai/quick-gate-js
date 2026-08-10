@@ -23,13 +23,17 @@ inputs:
     description: Post findings as a PR comment (requires pull_request trigger)
     required: false
     default: "true"
+  output-dir:
+    description: External directory for run artifacts; defaults to a runner-temp directory
+    required: false
+    default: ""
 
 outputs:
   status:
     description: Overall gate result -- "pass", "fail", or "escalated"
     value: ${{ steps.gate.outputs.status }}
   failures-json:
-    description: Path to .quick-gate/failures.json (empty if pass)
+    description: Path to the external failures.json (empty if pass)
     value: ${{ steps.gate.outputs.failures_json }}
   repair-status:
     description: Repair result -- "pass", "escalated", or "skipped"
@@ -57,16 +61,33 @@ runs:
         echo "Changed files:"
         cat "$CHANGED_FILE"
 
-    - name: Install Quick Gate
+    - name: Resolve checked-out action and external output paths
       shell: bash
-      run: npm install -g quick-gate@latest
+      env:
+        REQUESTED_OUTPUT_DIR: ${{ inputs.output-dir }}
+      run: |
+        ACTION_ROOT="$(cd "$GITHUB_ACTION_PATH/../../.." && pwd)"
+        OUTPUT_DIR="$REQUESTED_OUTPUT_DIR"
+        if [ -z "$OUTPUT_DIR" ]; then
+          OUTPUT_DIR="$RUNNER_TEMP/quick-gate-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+        fi
+        mkdir -p "$OUTPUT_DIR"
+        echo "QUICK_GATE_ACTION_ROOT=$ACTION_ROOT" >> "$GITHUB_ENV"
+        echo "QUICK_GATE_OUTPUT_DIR=$OUTPUT_DIR" >> "$GITHUB_ENV"
+
+    - name: Install checked-out Quick Gate action dependencies
+      shell: bash
+      run: npm ci --omit=dev --ignore-scripts --prefix "$QUICK_GATE_ACTION_ROOT"
 
     - name: Run quality gates
       id: gate
       shell: bash
       run: |
         set +e
-        quick-gate run --mode ${{ inputs.mode }} --changed-files "${{ steps.changed.outputs.changed_file }}"
+        node "$QUICK_GATE_ACTION_ROOT/src/cli.js" run \
+          --mode ${{ inputs.mode }} \
+          --changed-files "${{ steps.changed.outputs.changed_file }}" \
+          --output-dir "$QUICK_GATE_OUTPUT_DIR"
         EXIT_CODE=$?
         set -e
 
@@ -75,7 +96,7 @@ runs:
           echo "failures_json=" >> "$GITHUB_OUTPUT"
         else
           echo "status=fail" >> "$GITHUB_OUTPUT"
-          echo "failures_json=.quick-gate/failures.json" >> "$GITHUB_OUTPUT"
+          echo "failures_json=$QUICK_GATE_OUTPUT_DIR/failures.json" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Run bounded repair
@@ -84,8 +105,9 @@ runs:
       shell: bash
       run: |
         set +e
-        quick-gate repair \
-          --input .quick-gate/failures.json \
+        node "$QUICK_GATE_ACTION_ROOT/src/cli.js" repair \
+          --input "$QUICK_GATE_OUTPUT_DIR/failures.json" \
+          --output-dir "$QUICK_GATE_OUTPUT_DIR" \
           --max-attempts ${{ inputs.max-attempts }} \
           --deterministic-only
         EXIT_CODE=$?
@@ -119,16 +141,16 @@ runs:
         BODY="$BODY"$'\n\n'"**Gate status:** ${{ steps.gate.outputs.status }}"
         BODY="$BODY"$'\n'"**Repair status:** $REPAIR_STATUS"
 
-        if [ -f ".quick-gate/failures.json" ]; then
-          FINDING_COUNT=$(node -e "const f=JSON.parse(require('fs').readFileSync('.quick-gate/failures.json','utf8')); console.log(f.findings?.length || 0)")
+        if [ -f "$QUICK_GATE_OUTPUT_DIR/failures.json" ]; then
+          FINDING_COUNT=$(node -e "const f=JSON.parse(require('fs').readFileSync(process.env.QUICK_GATE_OUTPUT_DIR + '/failures.json','utf8')); console.log(f.findings?.length || 0)")
           BODY="$BODY"$'\n'"**Findings:** $FINDING_COUNT"
           BODY="$BODY"$'\n\n'"<details><summary>Failure details</summary>"$'\n\n'"\`\`\`json"
-          BODY="$BODY"$'\n'"$(node -e "const f=JSON.parse(require('fs').readFileSync('.quick-gate/failures.json','utf8')); console.log(JSON.stringify(f.findings,null,2))")"
+          BODY="$BODY"$'\n'"$(node -e "const f=JSON.parse(require('fs').readFileSync(process.env.QUICK_GATE_OUTPUT_DIR + '/failures.json','utf8')); console.log(JSON.stringify(f.findings,null,2))")"
           BODY="$BODY"$'\n'"\`\`\`"$'\n\n'"</details>"
         fi
 
-        if [ -f ".quick-gate/escalation.json" ]; then
-          REASON=$(node -e "const e=JSON.parse(require('fs').readFileSync('.quick-gate/escalation.json','utf8')); console.log(e.reason_code || 'UNKNOWN')")
+        if [ -f "$QUICK_GATE_OUTPUT_DIR/escalation.json" ]; then
+          REASON=$(node -e "const e=JSON.parse(require('fs').readFileSync(process.env.QUICK_GATE_OUTPUT_DIR + '/escalation.json','utf8')); console.log(e.reason_code || 'UNKNOWN')")
           BODY="$BODY"$'\n\n'"**Escalation reason:** \`$REASON\`"
         fi
 
@@ -141,5 +163,5 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: quick-gate-report
-        path: .quick-gate/
+        path: ${{ env.QUICK_GATE_OUTPUT_DIR }}/
         if-no-files-found: ignore

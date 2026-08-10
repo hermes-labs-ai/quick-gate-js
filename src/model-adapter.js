@@ -82,9 +82,8 @@ function callOllama({ model, prompt, cwd, timeoutMs, purpose }) {
   if (mockEnv) {
     return { ok: true, output: mockEnv };
   }
-  const escapedPrompt = prompt.replace(/'/g, `'"'"'`);
-  const command = `printf '%s' '${escapedPrompt}' | ollama run ${model}`;
-  const result = runCommand(command, { cwd, timeoutMs });
+  const command = ['ollama', 'run', model];
+  const result = runCommand(command, { cwd, timeoutMs, input: prompt });
   if (result.exit_code !== 0) {
     return {
       ok: false,
