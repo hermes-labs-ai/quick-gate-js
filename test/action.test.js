@@ -9,6 +9,8 @@ test('composite action runs checked-out source with external output', () => {
   assert.match(action, /QUICK_GATE_ACTION_ROOT\/src\/cli\.js/);
   assert.match(action, /--output-dir \"\$QUICK_GATE_OUTPUT_DIR\"/);
   assert.match(action, /RUNNER_TEMP\/quick-gate-/);
+  assert.match(action, /actions\/setup-node@[0-9a-f]{40}/);
+  assert.match(action, /actions\/upload-artifact@[0-9a-f]{40}/);
 });
 
 test('composite action fails unless the gate or bounded repair passes', () => {
@@ -52,5 +54,8 @@ test('repository CI keeps an active quality gate with meaningful plain-JS covera
   assert.match(workflow, /mode: full/);
   assert.deepEqual(config.gates, { typecheck: false, lighthouse: false });
   assert.deepEqual(config.commands.build, ['npm', 'pack', '--dry-run']);
-  assert.equal(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts.lint, 'node --check src/*.js test/*.test.js');
+  assert.equal(
+    JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts.lint,
+    'for file in src/*.js test/*.test.js; do node --check "$file" || exit 1; done',
+  );
 });
