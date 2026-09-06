@@ -365,7 +365,9 @@ test('lighthouse-only findings skip model patch', () => {
 test('repair keeps state in an explicit external output directory', () => {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-external-cwd-'));
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-repair-external-state-'));
-  fs.writeFileSync(path.join(cwd, 'package.json'), '{"name":"fixture","scripts":{}}\n');
+  fs.writeFileSync(path.join(cwd, 'package.json'), JSON.stringify({
+    name: 'fixture', scripts: { lint: 'exit 0', typecheck: 'exit 0', lighthouse: 'exit 0' },
+  }));
   const failuresPath = path.join(outputDir, 'failures.json');
   fs.writeFileSync(
     failuresPath,

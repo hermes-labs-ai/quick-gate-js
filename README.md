@@ -52,6 +52,20 @@ Quick Gate is a coordinator around the commands already defined by your project.
 
 The CLI requires an explicit mode. In a project with matching npm scripts, Quick Gate uses `npm run lint`, `npm run typecheck`, `npm run build`, and an available Lighthouse script. You can override commands in `quick-gate.config.json`. If no `typecheck` script exists, it tries `npx --no-install tsc --noEmit`; if no Lighthouse script exists, the Lighthouse fallback requires an explicit output directory so its filesystem results have a known home.
 
+These are the default checks. Declare inapplicable checks explicitly in `quick-gate.config.json`; Quick Gate does not infer applicability from missing scripts. For a plain JavaScript library with a lint script, no typecheck, no build step, and no website to audit:
+
+```json
+{
+  "gates": {
+    "typecheck": false,
+    "build": false,
+    "lighthouse": false
+  }
+}
+```
+
+`gates` accepts only `lint`, `typecheck`, `build`, and `lighthouse` with boolean values. Omitted entries stay enabled for their mode; `build: true` still requires `full` mode. Disabled checks are recorded as `skipped` and launch no commands. Missing or failing enabled checks still fail the run. This configuration applies to the CLI, repair reruns, and the composite GitHub Action; API callers can provide the same `gates` object in their configuration.
+
 Every run records `pass`, `fail`, `timeout`, `missing`, `error`, or `skipped` checks, command traces, exit and timeout information, findings, command versions, a snapshot digest for the checked paths, and whether output was truncated. A run exits `0` when the gate passes and `1` otherwise.
 
 ## Artifacts and output directories

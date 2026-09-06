@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCommand } from './exec.js';
+import { validateGateSelection } from './config.js';
 import { buildGateResult, configIdentity, packageVersion, snapshotInput } from './contract.js';
 
 function packageScripts(cwd) {
@@ -180,6 +181,7 @@ export function runDeterministicGates({
     allowUnsafeShellCommands: false,
     ...(config || {}),
   };
+  const gateSelection = validateGateSelection(resolvedConfig.gates);
   const scripts = packageScripts(resolvedCwd);
   const policy = resolvedConfig.policy || {};
   const perCommandTimeout = Math.max(1, Number(commandTimeoutMs || policy.commandTimeoutMs || 120_000));
@@ -225,7 +227,7 @@ export function runDeterministicGates({
 
   for (const gate of gatePlan) {
     const gateStartedAt = Date.now();
-    if (!gate.enabled) {
+    if (!gate.enabled || gateSelection[gate.name] === false) {
       gates.push({ name: gate.name, status: 'skipped', duration_ms: 0 });
       checks.push({
         name: gate.name,

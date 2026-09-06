@@ -132,6 +132,7 @@ export function configIdentity(config) {
   const normalized = {
     policy: config.policy || {},
     commands: config.commands || {},
+    gates: config.gates || {},
     lighthouse: config.lighthouse || {},
   };
   return {

@@ -14,6 +14,7 @@ test('loadConfig returns defaults when no config file exists', () => {
   const dir = tmpDir();
   const config = loadConfig(dir);
   assert.equal(config.source, 'defaults');
+  assert.deepEqual(config.gates, {});
   assert.equal(config.policy.maxAttempts, 3);
   assert.equal(config.policy.maxPatchLines, 150);
   assert.equal(config.lighthouse.thresholds.performance, 0.8);
@@ -35,6 +36,24 @@ test('loadConfig merges user config with defaults', () => {
   assert.equal(config.commands.lint, 'custom-lint');
   assert.equal(config.lighthouse.thresholds.performance, 0.9);
   assert.equal(config.lighthouse.thresholds.accessibility, 0.8);
+});
+
+test('loadConfig preserves explicit gate applicability and binds it to the digest', () => {
+  const dir = tmpDir();
+  const configPath = path.join(dir, 'quick-gate.config.json');
+  fs.writeFileSync(configPath, JSON.stringify({ gates: { typecheck: false, lighthouse: false } }));
+  const config = loadConfig(dir);
+  assert.deepEqual(config.gates, { typecheck: false, lighthouse: false });
+  fs.writeFileSync(configPath, JSON.stringify({ gates: { typecheck: true, lighthouse: false } }));
+  assert.notEqual(loadConfig(dir).config_digest, config.config_digest);
+});
+
+test('loadConfig rejects misspelled gate names and non-boolean applicability', () => {
+  const dir = tmpDir();
+  for (const gates of [{ typo: false }, { lint: 'false' }, [], null, false]) {
+    fs.writeFileSync(path.join(dir, 'quick-gate.config.json'), JSON.stringify({ gates }));
+    assert.throws(() => loadConfig(dir), /gates/);
+  }
 });
 
 test('loadChangedFiles parses newline-delimited file', () => {

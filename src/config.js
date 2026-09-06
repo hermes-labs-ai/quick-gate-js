@@ -6,6 +6,7 @@ import { configIdentity } from './contract.js';
 const DEFAULT_CONFIG = {
   policy: { ...DEFAULT_POLICY, commandTimeoutMs: 120_000, gateTimeoutMs: 300_000, outputCapBytes: 64 * 1024 },
   commands: {},
+  gates: {},
   lighthouse: {
     thresholds: {
       performance: 0.8,
@@ -16,6 +17,18 @@ const DEFAULT_CONFIG = {
   },
   allowUnsafeShellCommands: false,
 };
+
+export function validateGateSelection(gates = {}) {
+  if (!gates || typeof gates !== 'object' || Array.isArray(gates)) {
+    throw new Error('gates must be an object of gate names and booleans');
+  }
+  for (const [name, enabled] of Object.entries(gates)) {
+    if (!['lint', 'typecheck', 'build', 'lighthouse'].includes(name) || typeof enabled !== 'boolean') {
+      throw new Error(`Invalid gates.${name}: expected a known gate name and a boolean`);
+    }
+  }
+  return gates;
+}
 
 function withIdentity(config) {
   const identity = configIdentity(config);
@@ -36,6 +49,7 @@ export function loadConfig(cwd = process.cwd()) {
   return withIdentity({
     policy: { ...DEFAULT_CONFIG.policy, ...(userConfig.policy || {}) },
     commands: { ...(userConfig.commands || {}) },
+    gates: { ...validateGateSelection(userConfig.gates) },
     lighthouse: {
       ...DEFAULT_CONFIG.lighthouse,
       ...(userConfig.lighthouse || {}),
