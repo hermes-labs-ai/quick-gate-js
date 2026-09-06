@@ -19,3 +19,18 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm install
       - run: npm test
+
+  quality-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - name: Run repository quality gate
+        uses: ./.github/actions/quick-gate
+        with:
+          mode: full
+          repair: "false"
+          post-comment: "false"

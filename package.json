@@ -15,6 +15,7 @@
     "schemas/"
   ],
   "scripts": {
+    "lint": "node --check src/*.js test/*.test.js",
     "test": "node --test test/*.test.js"
   },
   "engines": {

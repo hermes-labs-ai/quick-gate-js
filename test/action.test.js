@@ -42,3 +42,15 @@ test('copyable consumer workflow is not an active repository workflow', () => {
   assert.equal(fs.existsSync('examples/quick-gate.yml'), true);
   assert.match(fs.readFileSync('README.md', 'utf8'), /\[copyable workflow example\]\(examples\/quick-gate\.yml\)/);
 });
+
+test('repository CI keeps an active quality gate with meaningful plain-JS coverage', () => {
+  const workflow = fs.readFileSync('.github/workflows/ci.yml', 'utf8');
+  const config = JSON.parse(fs.readFileSync('quick-gate.config.json', 'utf8'));
+
+  assert.match(workflow, /^  quality-gate:/m);
+  assert.match(workflow, /uses: \.\/\.github\/actions\/quick-gate/);
+  assert.match(workflow, /mode: full/);
+  assert.deepEqual(config.gates, { typecheck: false, lighthouse: false });
+  assert.deepEqual(config.commands.build, ['npm', 'pack', '--dry-run']);
+  assert.equal(JSON.parse(fs.readFileSync('package.json', 'utf8')).scripts.lint, 'node --check src/*.js test/*.test.js');
+});
