@@ -1,0 +1,64 @@
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+full_required_local = true
+adapter_status = "NATIVE_DEFAULT"
+exclusions = [".git/**", ".hermes/hermes_gate_runner.py", ".pytest_cache/**", ".ruff_cache/**", "**/__pycache__/**", "vendor/**", "node_modules/**", "dist/**", "build/**"]
+
+[adapter]
+enabled = false
+name = "native"
+argv = []
+minimum_version = ""
+
+[lintlang]
+enabled = true
+argv = ["lintlang", "scan", "--format", "json", "--fail-on", "review", "{files}"]
+trigger_globs = ["**/AGENTS.md", "**/CLAUDE.md", "**/prompts/**", "**/*.prompt", ".codex/**", ".claude/**"]
+timeout_seconds = 4.0
+blocking_threshold = "MEDIUM"
+
+[review]
+provider = "coderabbit"
+argv = ["coderabbit", "review", "--agent"]
+timeout_seconds = 180.0
+material_severities = ["critical", "major"]
+material_categories = ["correctness", "security", "data-loss", "concurrency", "api-contract"]
+fallback_argv = []
+
+[[fast]]
+name = "repository-integrity"
+argv = ["git", "fsck", "--full", "--no-dangling"]
+timeout_seconds = 2.0
+globs = ["**/*"]
+
+[[fast]]
+name = "config-and-install-contract"
+argv = ["node", "--test", "test/config.test.js", "test/install-truth.test.js"]
+timeout_seconds = 3.0
+globs = ["**/*"]
+
+[[fast]]
+name = "diff-check"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+globs = ["**/*"]
+
+[[fast]]
+name = "staged-diff-check"
+argv = ["git", "diff", "--cached", "--check"]
+timeout_seconds = 1.0
+globs = ["**/*"]
+
+[[full]]
+name = "repository-integrity"
+argv = ["git", "fsck", "--full", "--no-dangling"]
+timeout_seconds = 10.0
+globs = ["**/*"]
+
+[[full]]
+name = "test"
+argv = ["npm", "test"]
+timeout_seconds = 180.0
+globs = ["**/*"]
