@@ -165,3 +165,11 @@ runs:
         name: quick-gate-report
         path: ${{ env.QUICK_GATE_OUTPUT_DIR }}/
         if-no-files-found: ignore
+
+    - name: Conclude Quick Gate
+      if: always()
+      shell: bash
+      run: >-
+        "$GITHUB_ACTION_PATH/conclude.sh"
+        "${{ steps.gate.outputs.status }}"
+        "${{ steps.repair.outputs.status || steps.repair-skip.outputs.status }}"

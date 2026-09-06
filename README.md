@@ -212,7 +212,7 @@ jobs:
           --output-dir "$RUNNER_TEMP/quick-gate"
 ```
 
-The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml). It executes the action checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
+The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml) and a [copyable workflow example](examples/quick-gate.yml). The action executes its checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. The action fails after posting its report and uploading artifacts when the gate remains unresolved; a bounded repair that passes makes the action succeed. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
 
 ## Safety, privacy, and limits
 
