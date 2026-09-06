@@ -1,0 +1,9 @@
+{
+  "gates": {
+    "typecheck": false,
+    "lighthouse": false
+  },
+  "commands": {
+    "build": ["npm", "pack", "--dry-run"]
+  }
+}

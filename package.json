@@ -15,6 +15,7 @@
     "schemas/"
   ],
   "scripts": {
+    "lint": "for file in src/*.js test/*.test.js; do node --check \"$file\" || exit 1; done",
     "test": "node --test test/*.test.js"
   },
   "engines": {

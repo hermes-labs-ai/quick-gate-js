@@ -105,7 +105,9 @@ function runRepairActions(cwd, failures, policy, deterministicOnly, stateDir) {
     });
   }
 
-  if ((currentFailures.findings || []).length === 0) {
+  // Empty findings can accompany evaluation errors such as a changed snapshot.
+  // Only a fresh, passing rerun can establish that deterministic repair worked.
+  if (deterministicActions.length > 0 && currentFailures.status === 'pass') {
     return {
       attempted,
       currentFailures,

@@ -52,6 +52,20 @@ Quick Gate is a coordinator around the commands already defined by your project.
 
 The CLI requires an explicit mode. In a project with matching npm scripts, Quick Gate uses `npm run lint`, `npm run typecheck`, `npm run build`, and an available Lighthouse script. You can override commands in `quick-gate.config.json`. If no `typecheck` script exists, it tries `npx --no-install tsc --noEmit`; if no Lighthouse script exists, the Lighthouse fallback requires an explicit output directory so its filesystem results have a known home.
 
+These are the default checks. Declare inapplicable checks explicitly in `quick-gate.config.json`; Quick Gate does not infer applicability from missing scripts. For a plain JavaScript library with a lint script, no typecheck, no build step, and no website to audit:
+
+```json
+{
+  "gates": {
+    "typecheck": false,
+    "build": false,
+    "lighthouse": false
+  }
+}
+```
+
+`gates` accepts only `lint`, `typecheck`, `build`, and `lighthouse` with boolean values. Omitted entries stay enabled for their mode; `build: true` still requires `full` mode. Disabled checks are recorded as `skipped` and launch no commands. Missing or failing enabled checks still fail the run. This configuration applies to the CLI, repair reruns, and the composite GitHub Action; API callers can provide the same `gates` object in their configuration.
+
 Every run records `pass`, `fail`, `timeout`, `missing`, `error`, or `skipped` checks, command traces, exit and timeout information, findings, command versions, a snapshot digest for the checked paths, and whether output was truncated. A run exits `0` when the gate passes and `1` otherwise.
 
 ## Artifacts and output directories
@@ -212,7 +226,7 @@ jobs:
           --output-dir "$RUNNER_TEMP/quick-gate"
 ```
 
-The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml). It executes the action checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
+The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml) and a [copyable workflow example](examples/quick-gate.yml). The action executes its checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. The action fails after posting its report and uploading artifacts when the gate remains unresolved; a bounded repair that passes makes the action succeed. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
 
 ## Safety, privacy, and limits
 

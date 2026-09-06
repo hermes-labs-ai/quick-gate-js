@@ -34,6 +34,39 @@ function defaultConfig(overrides = {}) {
   };
 }
 
+test('plain JS library skips explicitly inapplicable tools and preserves lint failures', () => {
+  // Failing scripts prove disabled checks are not executed, even when discoverable.
+  const cwd = mkFixture({ lint: 'exit 0', typecheck: 'exit 7', lighthouse: 'exit 8', build: 'exit 9' });
+  const config = defaultConfig({ gates: { typecheck: false, lighthouse: false, build: false } });
+  const result = runDeterministicGates({ mode: 'full', cwd, config });
+  assert.equal(result.gateResult.status, 'pass');
+  assert.deepEqual(result.gateResult.checks.map(({ name, status }) => [name, status]), [
+    ['lint', 'pass'], ['typecheck', 'skipped'], ['build', 'skipped'], ['lighthouse', 'skipped'],
+  ]);
+  assert.equal(result.traces.length, 1);
+  const failed = runDeterministicGates({ mode: 'full', cwd, config: {
+    ...config, commands: { lint: [process.execPath, '-e', 'process.exit(3)'] },
+  } });
+  assert.equal(failed.gateResult.status, 'fail');
+  assert.equal(failed.findings[0].actual, 3);
+});
+
+test('disabling optional checks does not suppress a missing required lint command', () => {
+  const cwd = mkFixture();
+  const result = runDeterministicGates({ mode: 'quick', cwd,
+    config: defaultConfig({ gates: { typecheck: false, lighthouse: false } }),
+  });
+  assert.equal(result.gateResult.status, 'error');
+  assert.deepEqual(result.findings.map(({ id }) => id), ['lint_missing_command']);
+});
+
+test('API rejects invalid gate applicability before running commands', () => {
+  const cwd = mkFixture();
+  assert.throws(() => runDeterministicGates({ mode: 'quick', cwd,
+    config: defaultConfig({ gates: { typecheck: 'false' } }),
+  }), /gates/);
+});
+
 test('lint gate passes when npm script exits 0', () => {
   const cwd = mkFixture({ lint: 'exit 0', typecheck: 'exit 0', lighthouse: 'exit 0' });
   const result = runDeterministicGates({
