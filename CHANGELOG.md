@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- `node src/evidence.js`: emit a `run` evaluation as a Hermes Reliability Lab result envelope (tool, version, status, input hash, per-check and per-finding evidence, exit code, timestamp, Git commit) with the ordinary `gate-result/v1` payload embedded verbatim. No change to gate resolution or scoring.
+
+## [Unreleased]
+
 ### Fixed
 - Made the composite action return a failing status when gate failures remain unresolved, after preserving its report and artifacts.
 - Moved the copyable Quick Gate workflow example out of the active workflow directory so it does not run against this repository's intentionally minimal package scripts.
