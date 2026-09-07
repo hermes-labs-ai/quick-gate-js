@@ -1,0 +1,13 @@
+{
+  "name": "quick-gate-lab-fixture-clean",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "eslint": "^9.20.0",
+    "typescript": "^5.7.3"
+  }
+}

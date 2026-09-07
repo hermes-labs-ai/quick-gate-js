@@ -35,10 +35,10 @@ npx --no-install quick-gate run \
 
 The changed-files input is either a newline-delimited file or a JSON array. The commands above assume your project provides the underlying checks; if a check is not configured or available, Quick Gate reports that as a finding instead of inventing a result.
 
-The repository metadata currently describes version `0.2.3`. The live npm registry currently resolves `quick-gate` to `0.2.1`, so the source-checkout path above is the reproducible path for this checkout until the package release surface is synchronized. The intended exact-version command after that release is:
+For a reproducible global install of this release, pin its exact version:
 
 ```bash
-npm install -g quick-gate@0.2.3
+npm install -g quick-gate@0.3.0
 ```
 
 ## What it runs
@@ -155,6 +155,25 @@ The `gate-result/v1` contract gives downstream tooling a common envelope for:
 - truncation, error, configuration, package, and state-directory metadata when available.
 
 The repository validates the emitted contract against [`schemas/gate-result-v1.schema.json`](schemas/gate-result-v1.schema.json). The contract standardizes evidence shape; it does not make the underlying lint, typecheck, build, or Lighthouse evaluator correct, complete, or secure.
+
+### Machine-readable result envelope
+
+For tooling that compares results across products, the same evaluation can be
+emitted as a Hermes Reliability Lab result envelope — the ordinary
+`gate-result/v1` payload embedded verbatim, plus tool version, a hash of the
+exact input, one finding per check and per finding Quick Gate already
+produced, the exit code, a timestamp, and the Git commit when run from a
+checkout:
+
+```bash
+node src/evidence.js --mode quick
+node src/evidence.js --mode full --path path/to/project
+```
+
+It changes no gate resolution or scoring and writes nothing beyond what
+`evaluateGates` already writes (nothing). A check Quick Gate could not run —
+missing command, or an error starting it — is reported as `unknown`, not
+folded into a pass or silently treated as a code-quality failure.
 
 ## Configuration
 
