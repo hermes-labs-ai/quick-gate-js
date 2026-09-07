@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "lint": "for file in src/*.js test/*.test.js; do node --check \"$file\" || exit 1; done",
-    "pretest": "npm ci --ignore-scripts --prefix fixtures/lab/clean && npm ci --ignore-scripts --prefix fixtures/lab/broken",
+    "pretest": "npm install --ignore-scripts --prefix fixtures/lab/clean && npm install --ignore-scripts --prefix fixtures/lab/broken",
     "test": "node --test test/*.test.js"
   },
   "engines": {

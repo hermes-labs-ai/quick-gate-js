@@ -12,7 +12,7 @@ site repo). They are covered by `npm test` but are not part of the npm package.
   annotated `-> string` and returns `42`). The typecheck gate fails; lint
   stays clean.
 
-The root `npm test` command installs each fixture's locked devDependencies
+The root `npm test` command installs each fixture's declared devDependencies
 (ESLint and TypeScript) before running the suite so a fresh checkout exercises
 the same real local binaries without manual setup. Those installs stay local
 to the fixtures and are not part of what the deployed lab does.
