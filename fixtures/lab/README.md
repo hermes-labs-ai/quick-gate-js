@@ -1,8 +1,8 @@
 # Reliability Lab fixtures
 
-Two throwaway projects used only to generate the Hermes Reliability Lab's
+Two throwaway projects used to test and generate the Hermes Reliability Lab's
 Quick Gate captures (`node scripts/capture-quick-gate-fixture.mjs` in the
-site repo). Not part of the npm package, not covered by `npm test`.
+site repo). They are covered by `npm test` but are not part of the npm package.
 
 - `clean/` — `evaluateGates({ mode: "quick" })` passes: no lint or type
   findings. Lighthouse is disabled in `quick-gate.config.json`, the same
@@ -12,9 +12,9 @@ site repo). Not part of the npm package, not covered by `npm test`.
   annotated `-> string` and returns `42`). The typecheck gate fails; lint
   stays clean.
 
-`npm install` must be run once inside each fixture (devDependencies:
-eslint, typescript) so `npx --no-install tsc` and `eslint .` resolve real
-local binaries — that install is local to the fixture and is not part of
-what the deployed lab does.
+The root `npm test` command installs each fixture's locked devDependencies
+(ESLint and TypeScript) before running the suite so a fresh checkout exercises
+the same real local binaries without manual setup. Those installs stay local
+to the fixtures and are not part of what the deployed lab does.
 
 Regenerate nothing by hand here; these are inputs, not outputs.
