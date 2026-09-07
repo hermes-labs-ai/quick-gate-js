@@ -103,9 +103,9 @@ test('a missing native tool is reported as unknown, not silently folded into a p
     assert.ok(byId['check.lint.missing']);
     assert.equal(byId['check.lint.missing'].severity, 'unknown');
     assert.ok(byId['check.typecheck.missing']);
-    // Quick Gate's own gate-result/v1 still records a fail-shaped Finding for a
-    // missing check (unlike pygate, which records none) — the lab shows what
-    // is really there rather than normalizing the two products to agree.
+    // A missing check still gets a fail-shaped Finding here (both products do
+    // this: a nonzero exit — including "command not found" — earns a fallback
+    // finding so the run doesn't fail silently with zero evidence).
     assert.ok(result.findings.some((f) => f.id === 'finding.lint.0'));
     assert.equal(result.status, 'fail');
     assert.equal(result.exitCode, 1);
