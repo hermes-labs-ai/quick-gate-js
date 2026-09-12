@@ -11,3 +11,7 @@ demo/
 # Internal docs
 docs/market-research-report.md
 docs/canary-scope-and-fallback-design.md
+
+# Reliability Lab fixture installs (never shipped)
+fixtures/lab/*/node_modules/
+fixtures/lab/*/package-lock.json
