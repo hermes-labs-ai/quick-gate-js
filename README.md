@@ -41,6 +41,23 @@ For a reproducible global install of this release, pin its exact version:
 npm install -g quick-gate@0.3.0
 ```
 
+## Agent plugin
+
+The repository root is also one agent plugin. Claude Code, Codex CLI, Gemini CLI, and `npx skills` all install the same skill, [`skills/quick-gate-js/SKILL.md`](skills/quick-gate-js/SKILL.md). The skill runs the released `quick-gate@0.2.3` package and reports its `gate-result/v1` verdict.
+
+| Host | Install | Read back |
+| --- | --- | --- |
+| Claude Code | `claude plugin marketplace add hermes-labs-ai/quick-gate-js && claude plugin install quick-gate-js@quick-gate-js` | `claude plugin list` |
+| Codex CLI | `codex plugin marketplace add hermes-labs-ai/quick-gate-js && codex plugin add quick-gate-js@quick-gate-js` | `codex plugin list` |
+| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/quick-gate-js --ref main` | `gemini skills list` |
+| skills.sh | `npx skills add hermes-labs-ai/quick-gate-js` | `npx skills list` |
+
+Each host reads its own manifest:
+
+- Claude Code reads `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`.
+- Codex reads `.agents/plugins/marketplace.json`, whose entry is the repository root, and the portable Agent Plugins `plugin.json`.
+- Gemini CLI reads `gemini-extension.json` and finds the skill under `skills/`.
+
 ## What it runs
 
 Quick Gate is a coordinator around the commands already defined by your project. It does not replace ESLint, TypeScript, your build, or Lighthouse.
