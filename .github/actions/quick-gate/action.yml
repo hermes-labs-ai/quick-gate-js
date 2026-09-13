@@ -125,6 +125,18 @@ runs:
       shell: bash
       run: echo "status=skipped" >> "$GITHUB_OUTPUT"
 
+    - name: Publish Quick Gate summary
+      if: always()
+      shell: bash
+      env:
+        GATE_STATUS: ${{ steps.gate.outputs.status }}
+        REPAIR_STATUS: ${{ steps.repair.outputs.status || steps.repair-skip.outputs.status }}
+      run: |
+        node "$QUICK_GATE_ACTION_ROOT/src/ci-summary.js" \
+          --input "$QUICK_GATE_OUTPUT_DIR/gate-result.json" \
+          --gate-status "$GATE_STATUS" \
+          --repair-status "$REPAIR_STATUS" >> "$GITHUB_STEP_SUMMARY" || true
+
     - name: Post PR comment
       if: >-
         github.event_name == 'pull_request' &&
