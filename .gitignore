@@ -15,3 +15,7 @@ docs/canary-scope-and-fallback-design.md
 # Reliability Lab fixture installs (never shipped)
 fixtures/lab/*/node_modules/
 fixtures/lab/*/package-lock.json
+
+# Agent skill fixture installs (never shipped)
+skills/*/fixtures/*/node_modules/
+skills/*/fixtures/*/package-lock.json

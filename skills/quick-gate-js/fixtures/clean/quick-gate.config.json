@@ -1,0 +1,5 @@
+{
+  "commands": {
+    "lighthouse": ["node", "-e", "console.log('lighthouse: explicit no-op, this fixture is not a web app')"]
+  }
+}
