@@ -30,6 +30,6 @@ test('all host manifests name the same root plugin', () => {
   }
   assert.equal(claude.version, portable.version);
   assert.equal(gemini.version, portable.version);
-  assert.deepEqual(claudeMarket.plugins.map((p) => [p.name, p.source]), [['quick-gate-js', '.']]);
+  assert.deepEqual(claudeMarket.plugins.map((p) => [p.name, p.source]), [['quick-gate-js', './']]);
   assert.deepEqual(codexMarket.plugins.map((p) => [p.name, p.source.path]), [['quick-gate-js', './']]);
 });
