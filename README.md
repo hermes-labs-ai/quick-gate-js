@@ -35,11 +35,13 @@ npx --no-install quick-gate run \
 
 The changed-files input is either a newline-delimited file or a JSON array. The commands above assume your project provides the underlying checks; if a check is not configured or available, Quick Gate reports that as a finding instead of inventing a result.
 
-For a reproducible global install of this release, pin its exact version:
+For a reproducible global install, pin the exact version currently published to npm:
 
 ```bash
-npm install -g quick-gate@0.3.0
+npm install -g quick-gate@0.2.3
 ```
+
+The repository is tagged through `v0.3.0`, but npm's `latest` is `0.2.3` until an owner-approved publish runs; do not pin `0.3.0` until `npm view quick-gate version` reports it.
 
 ## Agent plugin
 
