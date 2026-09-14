@@ -1,0 +1,14 @@
+{
+  "@context": "https://w3id.org/codemeta/3.1",
+  "@type": "SoftwareSourceCode",
+  "name": "Quick Gate",
+  "description": "quick-gate-js (npm: quick-gate) is a deterministic JS/TS CI quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one fail-fast result, with bounded auto-repair and structured escalation evidence for humans or agents. Works with Next.js, React, Vue, Svelte, or any Node project. A gate-and-escalate wrapper, not a dashboard.",
+  "codeRepository": "https://github.com/hermes-labs-ai/quick-gate-js",
+  "version": "0.2.3",
+  "license": "https://spdx.org/licenses/Apache-2.0",
+  "programmingLanguage": "JavaScript",
+  "runtimePlatform": "Node.js >=18",
+  "author": [{"@type": "Person", "givenName": "Rolando", "familyName": "Bosch Rodriguez", "identifier": "https://orcid.org/0009-0005-4896-1112"}],
+  "url": "https://www.npmjs.com/package/quick-gate",
+  "keywords": ["ai-agents", "ai-reliability", "auto-repair", "ci", "ci-cd", "code-quality", "devtools", "eslint", "frontend", "gemini-cli-extension", "hermes-labs", "javascript", "lighthouse", "linting", "nodejs", "quality-gate", "static-analysis", "typecheck", "typescript"]
+}
