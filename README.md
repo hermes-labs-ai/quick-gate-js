@@ -35,13 +35,29 @@ npx --no-install quick-gate run \
 
 The changed-files input is either a newline-delimited file or a JSON array. The commands above assume your project provides the underlying checks; if a check is not configured or available, Quick Gate reports that as a finding instead of inventing a result.
 
-For a reproducible global install of this release, pin its exact version:
+This repository's `package.json` currently reads `0.3.0`, but that version is **not yet published to npm** — it exists only in this checkout until the publish workflow runs for the `v0.3.0` tag. Do not run `npm install -g quick-gate@0.3.0`; it will fail to resolve. Until that publish happens, install from npm without pinning a version (or pin `@0.2.3` explicitly) and check `npm view quick-gate version` if you need to confirm what is currently published.
 
-```bash
-npm install -g quick-gate@0.3.0
+Worked example, run against the published package in a throwaway directory:
+
+```console
+$ npm install --save-dev quick-gate
+added 7 packages, and audited 8 packages in 5s
+found 0 vulnerabilities
+
+$ npx --no-install quick-gate --help
+Quick Gate v0.2.3
+
+Commands:
+  quick-gate run --mode quick|full --changed-files <path>
+    --output-dir <external-directory>
+  quick-gate summarize --input .quick-gate/failures.json
+  quick-gate repair --input .quick-gate/failures.json [--output-dir <external-directory>]
+    [--max-attempts 3] [--deterministic-only]
+
+Options:
+  --deterministic-only   Skip model-assisted repair (no Ollama required)
+  --help, -h             Show this help message
 ```
-
-`0.3.0` is this repository's released version. npm's `latest` is still `0.2.3` until the publish workflow runs for the `v0.3.0` tag, so check `npm view quick-gate version` first if that pinned install cannot resolve.
 
 ## Agent plugin
 
@@ -299,6 +315,14 @@ npm test
 ```
 
 The test suite exercises the CLI, gate execution, artifact contracts, configuration, bounded repair, and argv safety. Please keep changes focused, add tests for behavior changes, and see [`CONTRIBUTING.md`](CONTRIBUTING.md) for repository conventions. The project is licensed under [Apache License 2.0](LICENSE).
+
+## Also from Hermes Labs
+
+- [quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python) (PyPI: `pygate-ci`) — the Python counterpart to this repo: a deterministic Python CI quality gate that normalizes Ruff, Pyright, and pytest results into one fail-fast decision, attempts bounded auto-repair, and escalates with machine-readable evidence when it cannot finish safely.
+- [lintlang](https://github.com/hermes-labs-ai/lintlang) — static analysis for AI agent configs, tool descriptions, and system prompts; catches vague tool descriptions, missing stop conditions, and schema gaps before they reach runtime.
+- [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — a local dual-layer memory pattern for AI agents pairing a compact markdown index with semantic retrieval from a local vector store.
+- [little-canary](https://github.com/hermes-labs-ai/little-canary) — detects prompt injection by its effect on a sacrificial canary model rather than pattern matching alone, returning block, flag, or pass before the primary model acts.
+- [fidelis](https://github.com/hermes-labs-ai/fidelis) — zero-LLM agent memory using local-first BM25, dense-vector, and reciprocal-rank-fusion retrieval, returning original passages verbatim by default. Available on PyPI as `fidelis-memory`.
 
 ## About Hermes Labs
 
