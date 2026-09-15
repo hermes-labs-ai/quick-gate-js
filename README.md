@@ -41,6 +41,8 @@ For a reproducible global install of this release, pin its exact version:
 npm install -g quick-gate@0.3.0
 ```
 
+`0.3.0` is this repository's released version. npm's `latest` is still `0.2.3` until the publish workflow runs for the `v0.3.0` tag, so check `npm view quick-gate version` first if that pinned install cannot resolve.
+
 ## Agent plugin
 
 The repository root is also one agent plugin. Claude Code, Codex CLI, Gemini CLI, and `npx skills` all install the same skill, [`skills/quick-gate-js/SKILL.md`](skills/quick-gate-js/SKILL.md). The skill runs the released `quick-gate@0.2.3` package and reports its `gate-result/v1` verdict.
