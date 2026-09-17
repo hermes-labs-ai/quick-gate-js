@@ -19,7 +19,7 @@ npm install
 npx --no-install quick-gate --help
 ```
 
-From the JavaScript or TypeScript project you want to check, install Quick Gate as a development dependency and use the local binary:
+From the JavaScript or TypeScript project you want to check, install Quick Gate as a development dependency and use the local binary. The first recipe is for POSIX shells (macOS, Linux, or WSL):
 
 ```bash
 npm install --save-dev quick-gate
@@ -33,9 +33,50 @@ npx --no-install quick-gate run \
   --output-dir "$QG_OUTPUT"
 ```
 
+For PowerShell, use the equivalent temporary paths and local binary:
+
+```powershell
+npm install --save-dev quick-gate
+
+$qgChanged = Join-Path ([System.IO.Path]::GetTempPath()) ("quick-gate-changed-" + [guid]::NewGuid() + ".txt")
+$qgOutput = Join-Path ([System.IO.Path]::GetTempPath()) ("quick-gate-output-" + [guid]::NewGuid())
+New-Item -ItemType Directory -Path $qgOutput | Out-Null
+"src/app.ts" | Set-Content -NoNewline $qgChanged
+npx --no-install quick-gate run `
+  --mode quick `
+  --changed-files $qgChanged `
+  --output-dir $qgOutput
+```
+
 The changed-files input is either a newline-delimited file or a JSON array. The commands above assume your project provides the underlying checks; if a check is not configured or available, Quick Gate reports that as a finding instead of inventing a result.
 
-This repository's `package.json` currently reads `0.3.0`, but that version is **not yet published to npm** — it exists only in this checkout until the publish workflow runs for the `v0.3.0` tag. Do not run `npm install -g quick-gate@0.3.0`; it will fail to resolve. Until that publish happens, install from npm without pinning a version (or pin `@0.2.3` explicitly) and check `npm view quick-gate version` if you need to confirm what is currently published.
+### Verify the runtime you are about to run
+
+There are two deliberately different version surfaces:
+
+- The current public npm package is [`quick-gate@0.2.3`](https://www.npmjs.com/package/quick-gate/v/0.2.3), with a canonical [GitHub release](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.2.3) and [changelog entry](CHANGELOG.md#023---2026-08-08).
+- This source checkout currently identifies itself as `0.3.0`; its plugin documentation was released as [`v0.3.1`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.3.1). That checkout version is not an npm package version. Do not run `npm install -g quick-gate@0.3.0`: npm does not provide that version.
+
+After installing into a project, read back the local runtime without asking npm to install anything:
+
+```bash
+npx --no-install quick-gate --version
+# quick-gate 0.2.3
+```
+
+To verify the public artifact independently of a project checkout, use its exact published pin:
+
+```bash
+npx --yes quick-gate@0.2.3 --version
+# quick-gate 0.2.3
+```
+
+To inspect the source checkout instead, read its package metadata directly:
+
+```bash
+node -p "require('./package.json').version"
+# 0.3.0
+```
 
 Worked example, run against the published package in a throwaway directory:
 
