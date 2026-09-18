@@ -52,10 +52,15 @@ The changed-files input is either a newline-delimited file or a JSON array. The 
 
 ### Verify the runtime you are about to run
 
-There are two deliberately different version surfaces:
+Quick Gate has three release surfaces that move independently. Check the row you actually depend on before you install or debug against it:
 
-- The current public npm package is [`quick-gate@0.2.3`](https://www.npmjs.com/package/quick-gate/v/0.2.3), with a canonical [GitHub release](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.2.3) and [changelog entry](CHANGELOG.md#023---2026-08-08).
-- This source checkout currently identifies itself as `0.3.0`; its plugin documentation was released as [`v0.3.1`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.3.1). That checkout version is not an npm package version. Do not run `npm install -g quick-gate@0.3.0`: npm does not provide that version.
+| Surface | Current value | Where it's declared |
+| --- | --- | --- |
+| npm runtime (published package) | [`0.2.3`](https://www.npmjs.com/package/quick-gate/v/0.2.3) | [GitHub release `v0.2.3`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.2.3), [changelog entry](CHANGELOG.md#023---2026-08-08) |
+| repository source (this checkout) | `0.3.0` | `package.json` |
+| agent plugin (GitHub release) | [`v0.3.1`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.3.1) | latest tagged GitHub release |
+
+`0.3.0` is a source-checkout identifier only, not an npm package version. Do not run `npm install -g quick-gate@0.3.0`: npm does not provide that version. Installing `quick-gate` from npm always resolves to the npm runtime row above.
 
 After installing into a project, read back the local runtime without asking npm to install anything:
 
