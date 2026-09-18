@@ -23,7 +23,7 @@
     "node": ">=18.0.0"
   },
   "license": "Apache-2.0",
-  "author": "Hermes Labs <rbosch@lpci.ai> (https://hermes-labs.ai)",
+  "author": "Hermes Labs <roli@hermes-labs.ai> (https://hermes-labs.ai)",
   "homepage": "https://github.com/hermes-labs-ai/quick-gate-js",
   "repository": {
     "type": "git",
