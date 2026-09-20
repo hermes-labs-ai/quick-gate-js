@@ -54,36 +54,36 @@ The changed-files input is either a newline-delimited file or a JSON array. The 
 
 Quick Gate has three release surfaces that move independently. Check the row you actually depend on before you install or debug against it:
 
-| Surface | Current value | Where it's declared |
+| Surface | Prepared/current value | Where it's declared |
 | --- | --- | --- |
-| npm runtime (published package) | [`0.2.3`](https://www.npmjs.com/package/quick-gate/v/0.2.3) | [GitHub release `v0.2.3`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.2.3), [changelog entry](CHANGELOG.md#023---2026-08-08) |
-| repository source (this checkout) | `0.3.0` | `package.json` |
-| agent plugin (GitHub release) | [`v0.3.1`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.3.1) | latest tagged GitHub release |
+| npm runtime | `0.3.2` release target; [`0.2.3`](https://www.npmjs.com/package/quick-gate/v/0.2.3) remains public until publication completes | `package.json`, npm registry |
+| repository source (this checkout) | `0.3.2` | `package.json` |
+| agent plugin | `0.3.2` release target; [`v0.3.1`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.3.1) remains the latest tag until release | plugin manifests, GitHub releases |
 
-`0.3.0` is a source-checkout identifier only, not an npm package version. Do not run `npm install -g quick-gate@0.3.0`: npm does not provide that version. Installing `quick-gate` from npm always resolves to the npm runtime row above.
+Source metadata prepares `0.3.2`; it does not prove that npm publication or a GitHub release happened. Before using the new exact pin, verify that `npm view quick-gate version` returns `0.3.2` and that a `v0.3.2` GitHub release exists. Until then, the public exact npm pin is `0.2.3` and the latest agent-plugin tag is `v0.3.1`.
 
 After installing into a project, read back the local runtime without asking npm to install anything:
 
 ```bash
 npx --no-install quick-gate --version
-# quick-gate 0.2.3
+# quick-gate <installed-version>
 ```
 
-To verify the public artifact independently of a project checkout, use its exact published pin:
+After publication, verify the `0.3.2` artifact independently of a project checkout with its exact pin:
 
 ```bash
-npx --yes quick-gate@0.2.3 --version
-# quick-gate 0.2.3
+npx --yes quick-gate@0.3.2 --version
+# quick-gate 0.3.2
 ```
 
 To inspect the source checkout instead, read its package metadata directly:
 
 ```bash
 node -p "require('./package.json').version"
-# 0.3.0
+# 0.3.2
 ```
 
-Worked example, run against the published package in a throwaway directory:
+Expected release output after the npm registry reports `0.3.2`, using a throwaway directory:
 
 ```console
 $ npm install --save-dev quick-gate
@@ -91,7 +91,7 @@ added 7 packages, and audited 8 packages in 5s
 found 0 vulnerabilities
 
 $ npx --no-install quick-gate --help
-Quick Gate v0.2.3
+Quick Gate v0.3.2
 
 Commands:
   quick-gate run --mode quick|full --changed-files <path>
@@ -107,7 +107,7 @@ Options:
 
 ## Agent plugin
 
-The repository root is also one agent plugin. Claude Code, Codex CLI, Gemini CLI, and `npx skills` all install the same skill, [`skills/quick-gate-js/SKILL.md`](skills/quick-gate-js/SKILL.md). The skill runs the released `quick-gate@0.2.3` package and reports its `gate-result/v1` verdict.
+The repository root is also one agent plugin. Claude Code, Codex CLI, Gemini CLI, and `npx skills` all install the same skill, [`skills/quick-gate-js/SKILL.md`](skills/quick-gate-js/SKILL.md). The `0.3.2` plugin is prepared to run the exact `quick-gate@0.3.2` package after that package is published and reports its `gate-result/v1` verdict.
 
 | Host | Install | Read back |
 | --- | --- | --- |

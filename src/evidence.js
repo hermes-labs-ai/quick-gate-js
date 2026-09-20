@@ -18,7 +18,7 @@
  *   node src/evidence.js --mode quick
  *   node src/evidence.js --mode full --path fixtures/lab/broken
  *
- * Added in v0.2.4 (unreleased).
+ * Added in v0.3.0.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -26,6 +26,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { evaluateGates } from './api.js';
 
 const require = createRequire(import.meta.url);
@@ -269,6 +270,6 @@ export function main(argv = process.argv.slice(2)) {
   return result.exitCode;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   process.exit(main());
 }

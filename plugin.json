@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "quick-gate-js",
-  "version": "0.3.0",
-  "description": "Run the released Quick Gate CLI (quick-gate@0.2.3) as one deterministic JavaScript/TypeScript gate and read its gate-result/v1 verdict",
+  "version": "0.3.2",
+  "description": "Run Quick Gate CLI 0.3.2 as one deterministic JavaScript/TypeScript gate and read its gate-result/v1 verdict",
   "author": { "name": "Hermes Labs", "url": "https://hermes-labs.ai" },
   "homepage": "https://github.com/hermes-labs-ai/quick-gate-js",
   "repository": "https://github.com/hermes-labs-ai/quick-gate-js",

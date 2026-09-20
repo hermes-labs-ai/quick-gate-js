@@ -1,6 +1,6 @@
 {
   "name": "quick-gate",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "JavaScript and TypeScript quality gate CLI with bounded auto-repair and escalation artifacts",
   "type": "module",
   "exports": {

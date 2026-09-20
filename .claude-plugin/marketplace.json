@@ -10,7 +10,7 @@
     {
       "name": "quick-gate-js",
       "source": "./",
-      "description": "Run the released Quick Gate CLI (quick-gate@0.2.3) as one deterministic JavaScript/TypeScript gate and read its gate-result/v1 verdict",
+      "description": "Run Quick Gate CLI 0.3.2 as one deterministic JavaScript/TypeScript gate and read its gate-result/v1 verdict",
       "category": "development",
       "homepage": "https://github.com/hermes-labs-ai/quick-gate-js"
     }

@@ -4,12 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-20
+
+### Added
+- Added one portable agent plugin and skill for Claude Code, Codex CLI, Gemini CLI, and compatible Agent Skills hosts.
+- Added a root-level Marketplace action wrapper that forwards the existing nested Action contract while defaulting `repair` and `post-comment` to `false`.
+
+### Changed
+- Switched npm publication to trusted publishing with GitHub OIDC and provenance.
+- Clarified the distinct npm, repository, and agent-plugin version surfaces and the exact install/runtime readbacks for each.
+
 ### Fixed
 - Added an optional `artifact-name` action input so matrix jobs can preserve separate reports without Artifact v4 name conflicts.
 - Return `skipped` in the action’s `repair-status` output when repair is not run. Repository CI exercises both outputs across two Node versions.
+- Preserved a stable aggregate quality-gate check while exercising the action across its Node.js matrix.
 
-### Added
-- Added a root-level Marketplace action wrapper that forwards the existing nested Action contract while defaulting `repair` and `post-comment` to `false`.
+`v0.3.1` was a GitHub-only agent-plugin tag and was not published to npm. `0.3.2` reunifies the package and repository release line.
 
 ## [0.3.0] - 2026-09-07
 

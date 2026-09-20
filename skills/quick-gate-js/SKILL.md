@@ -1,6 +1,6 @@
 ---
 name: quick-gate-js
-description: Run Quick Gate (npm package quick-gate, pinned to released 0.2.3) as one deterministic lint + typecheck + build + Lighthouse gate over a JavaScript or TypeScript project and report its gate-result/v1 verdict. Use when the user asks to gate, check, or verify a JS/TS change before merge, or to interpret a Quick Gate result.
+description: Run Quick Gate (npm package quick-gate, pinned to 0.3.2) as one deterministic lint + typecheck + build + Lighthouse gate over a JavaScript or TypeScript project and report its gate-result/v1 verdict. Use when the user asks to gate, check, or verify a JS/TS change before merge, or to interpret a Quick Gate result.
 ---
 
 Quick Gate runs the checks a JavaScript/TypeScript project already defines
@@ -11,17 +11,17 @@ correct.
 
 ## Run it
 
-1. Pick a runner. If `quick-gate --version` prints `quick-gate 0.2.3`, use
+1. Pick a runner. If `quick-gate --version` prints `quick-gate 0.3.2`, use
    the bare `quick-gate` command. Otherwise use
-   `npx --yes quick-gate@0.2.3`. Keep the exact pin: 0.2.3 is the release
-   published on npm, and this skill describes its behavior. Do not bump it.
+   `npx --yes quick-gate@0.3.2`. Keep the exact pin: this skill and its
+   bundled fixtures describe version 0.3.2. Do not substitute a floating tag.
 2. Make sure the project's own dependencies are installed. Quick Gate calls
    fallbacks with `npx --no-install` and never installs `tsc` or `lhci` for you.
 3. From the project root, write the changed files (newline-delimited or a
    JSON array) and run with an explicit mode and an external output directory:
    ```
    printf 'src/app.ts\n' > "$TMPDIR/qg-changed.txt"
-   npx --yes quick-gate@0.2.3 run --mode quick \
+   npx --yes quick-gate@0.3.2 run --mode quick \
      --changed-files "$TMPDIR/qg-changed.txt" \
      --output-dir "$(mktemp -d)"
    ```
@@ -52,16 +52,15 @@ correct.
   findings, then `pass`.
 - Per-check `status` is `pass`, `fail`, `timeout`, `missing`, `error`, or
   `skipped` (`build` in `quick` mode).
-- Release 0.2.3 has no `unknown` value. Report `timeout` and `error` as
+- Release 0.3.2 has no `unknown` result status. Report `timeout` and `error` as
   "not verified". They are not a pass and not proof of a code defect.
 
-## Release 0.2.3 limits
+## Release 0.3.2 limits
 
-- Lighthouse is enabled in both modes. The `gates` toggle in the repository
-  README is not in 0.2.3. A project with no Lighthouse script and no `lhci`
-  gets `error`. For a non-web project the only 0.2.3 option is an explicit
-  `commands.lighthouse` entry. If you add one that does nothing, tell the
-  user that Lighthouse was not really checked.
+- Lighthouse is enabled in both modes by default. Disable an inapplicable
+  check only with an explicit boolean under `gates` in
+  `quick-gate.config.json`; disabled checks are recorded as `skipped`.
+  Disclose skipped checks instead of presenting them as verified.
 - Do not run `quick-gate repair` unless the user asks. It can modify project
   files. After a repair, review `git diff` and the report.
 - Artifacts can contain command output and paths. Do not upload them
@@ -76,9 +75,9 @@ not a web app. To check that the skill works, copy one fixture to a temp
 directory and run:
 ```
 npm install --ignore-scripts --no-audit --no-fund --no-package-lock
-npx --yes quick-gate@0.2.3 run --mode quick --changed-files changed-files.txt --output-dir "$(mktemp -d)"
+npx --yes quick-gate@0.3.2 run --mode quick --changed-files changed-files.txt --output-dir "$(mktemp -d)"
 ```
-Observed with quick-gate 0.2.3:
+The bundled fixtures are expected to produce these results with quick-gate 0.3.2:
 
 - `clean` exits `0`: `status: pass`. Checks are lint `pass`, typecheck
   `pass`, build `skipped`, lighthouse `pass`, with 0 findings.

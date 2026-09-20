@@ -10,6 +10,9 @@ import { snapshotInput, stableStringify } from '../src/contract.js';
 import { validateAgainstSchema } from '../src/schema.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const RELEASE_VERSION = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+).version;
 
 function fixtureDir() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'quick-gate-contract-'));
@@ -96,7 +99,7 @@ test('evaluateGates returns gate-result/v1 without writing artifacts', () => {
   assert.equal(result.gateResult.version, 'gate-result/v1');
   assert.equal(result.gateResult.status, 'pass');
   assert.deepEqual(result.gateResult.checked_paths, ['package.json', 'src file.js']);
-  assert.equal(result.gateResult.package_version, '0.3.0');
+  assert.equal(result.gateResult.package_version, RELEASE_VERSION);
   assert.ok(result.gateResult.config_digest);
   assert.ok(result.gateResult.command_versions.lint.version);
   assert.equal(validateAgainstSchema('gate-result-v1.schema.json', result.gateResult).valid, true);
