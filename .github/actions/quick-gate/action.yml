@@ -23,6 +23,10 @@ inputs:
     description: Post findings as a PR comment (requires pull_request trigger)
     required: false
     default: "true"
+  artifact-name:
+    description: Unique report artifact name; use a matrix suffix when running multiple jobs
+    required: false
+    default: quick-gate-report
   output-dir:
     description: External directory for run artifacts; defaults to a runner-temp directory
     required: false
@@ -37,7 +41,7 @@ outputs:
     value: ${{ steps.gate.outputs.failures_json }}
   repair-status:
     description: Repair result -- "pass", "escalated", or "skipped"
-    value: ${{ steps.repair.outputs.status }}
+    value: ${{ steps.repair.outputs.status || steps.repair-skip.outputs.status }}
 
 runs:
   using: composite
@@ -174,7 +178,7 @@ runs:
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
-        name: quick-gate-report
+        name: ${{ inputs.artifact-name }}
         path: ${{ env.QUICK_GATE_OUTPUT_DIR }}/
         if-no-files-found: ignore
 

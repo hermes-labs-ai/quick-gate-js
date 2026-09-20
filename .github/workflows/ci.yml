@@ -20,8 +20,11 @@ jobs:
       - run: npm install
       - run: npm test
 
-  quality-gate:
+  quality-gate-matrix:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
     permissions:
       contents: read
     steps:
@@ -29,8 +32,30 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run repository quality gate
+        id: gate
         uses: ./.github/actions/quick-gate
         with:
           mode: full
           repair: "false"
           post-comment: "false"
+          node-version: ${{ matrix.node-version }}
+          artifact-name: quick-gate-node-${{ matrix.node-version }}
+      - name: Check public action outputs
+        env:
+          GATE_STATUS: ${{ steps.gate.outputs.status }}
+          REPAIR_STATUS: ${{ steps.gate.outputs.repair-status }}
+        run: |
+          test "$GATE_STATUS" = pass
+          test "$REPAIR_STATUS" = skipped
+
+  quality-gate:
+    needs: quality-gate-matrix
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require every matrix gate to pass
+        env:
+          MATRIX_RESULT: ${{ needs.quality-gate-matrix.result }}
+        run: test "$MATRIX_RESULT" = success
