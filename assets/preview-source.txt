@@ -1,6 +1,6 @@
 $ quick-gate --help
 
-Quick Gate v0.2.3
+Quick Gate v0.3.2
 
 Commands:
   quick-gate run --mode quick|full --changed-files <path>

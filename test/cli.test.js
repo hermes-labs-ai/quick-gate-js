@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cliPath = path.join(__dirname, '..', 'src', 'cli.js');
+const packageVersion = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+).version;
 
 function runCli(args, options = {}) {
   const result = spawnSync('node', [cliPath, ...args], {
@@ -38,7 +41,7 @@ test('-h exits 0', () => {
 test('--version exits 0 with the package version', () => {
   const result = runCli(['--version']);
   assert.equal(result.code, 0);
-  assert.match(result.stdout, /^quick-gate 0\.3\.0\s*$/);
+  assert.equal(result.stdout.trim(), `quick-gate ${packageVersion}`);
 });
 
 test('no args exits 0 and shows usage', () => {

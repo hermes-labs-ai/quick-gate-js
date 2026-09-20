@@ -5,6 +5,7 @@ import test from 'node:test';
 const root = new URL('../', import.meta.url);
 const readJson = (rel) => JSON.parse(fs.readFileSync(new URL(rel, root), 'utf8'));
 const skillPath = 'skills/quick-gate-js/SKILL.md';
+const packageVersion = readJson('package.json').version;
 
 test('repository ships exactly one canonical SKILL.md', () => {
   const skills = fs.readdirSync(new URL('skills/', root), { recursive: true })
@@ -12,7 +13,7 @@ test('repository ships exactly one canonical SKILL.md', () => {
   assert.deepEqual(skills.map(String), ['quick-gate-js/SKILL.md']);
   const skill = fs.readFileSync(new URL(skillPath, root), 'utf8');
   assert.match(skill, /^---\nname: quick-gate-js\ndescription: /);
-  assert.match(skill, /quick-gate@0\.2\.3/);
+  assert.match(skill, new RegExp(`quick-gate@${packageVersion.replaceAll('.', '\\.')}`));
   assert.match(skill, /gate-result\/v1/);
 });
 
@@ -27,6 +28,7 @@ test('all host manifests name the same root plugin', () => {
   for (const manifest of [portable, claude, gemini]) {
     assert.equal(manifest.name, 'quick-gate-js');
     assert.equal(manifest.description, portable.description);
+    assert.equal(manifest.version, packageVersion);
   }
   assert.equal(claude.version, portable.version);
   assert.equal(gemini.version, portable.version);

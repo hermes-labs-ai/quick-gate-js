@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to (re-)publish, e.g. v0.3.0"
+        description: "Existing tag to (re-)publish, e.g. v0.3.2"
         required: true
         type: string
 
@@ -79,4 +79,4 @@ jobs:
           name: npm-package
 
       - name: Publish to npm (OIDC trusted publishing)
-        run: npm publish *.tgz --provenance --access public
+        run: npm publish ./*.tgz --provenance --access public
