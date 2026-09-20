@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- Added an optional `artifact-name` action input so matrix jobs can preserve separate reports without Artifact v4 name conflicts.
+- Return `skipped` in the action’s `repair-status` output when repair is not run. Repository CI exercises both outputs across two Node versions.
+
 ## [0.3.0] - 2026-09-07
 
 ### Added
