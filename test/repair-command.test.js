@@ -38,6 +38,15 @@ if (gate === 'typecheck' && c.includes('__TYPE_FAIL__')) { console.error('TYPE_E
 process.exit(0);
 `;
   fs.writeFileSync(path.join(dir, 'scripts', 'check.js'), checkScript, 'utf8');
+  // Repair assertions in this fixture exercise lint remediation. Disable the
+  // unrelated gates so each rerun stays inside the repository gate budget.
+  fs.writeFileSync(
+    path.join(dir, 'quick-gate.config.json'),
+    JSON.stringify({
+      gates: { typecheck: false, lighthouse: false },
+      policy: { commandTimeoutMs: 5000, gateTimeoutMs: 10000 },
+    }),
+  );
 
   // Init git for diffSnapshot
   spawnSync('git', ['init'], { cwd: dir, encoding: 'utf8' });

@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - Added an optional `artifact-name` action input so matrix jobs can preserve separate reports without Artifact v4 name conflicts.
 - Return `skipped` in the action’s `repair-status` output when repair is not run. Repository CI exercises both outputs across two Node versions.
 
+### Added
+- Added a root-level Marketplace action wrapper that forwards the existing nested Action contract while defaulting `repair` and `post-comment` to `false`.
+
 ## [0.3.0] - 2026-09-07
 
 ### Added

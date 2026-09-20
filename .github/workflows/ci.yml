@@ -18,7 +18,32 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm install
+      - run: npm run lint
       - run: npm test
+
+  marketplace-action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Run root Marketplace action
+        id: gate
+        uses: ./
+        with:
+          mode: full
+          repair: "false"
+          post-comment: "false"
+          artifact-name: quick-gate-root
+      - name: Check root action output forwarding
+        env:
+          GATE_STATUS: ${{ steps.gate.outputs.status }}
+          REPAIR_STATUS: ${{ steps.gate.outputs.repair-status }}
+        run: |
+          test "$GATE_STATUS" = pass
+          test "$REPAIR_STATUS" = skipped
 
   quality-gate-matrix:
     runs-on: ubuntu-latest

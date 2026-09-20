@@ -1,0 +1,75 @@
+name: Quick Gate
+description: Run Hermes Labs' deterministic JavaScript and TypeScript quality gate.
+author: Hermes Labs
+
+branding:
+  color: blue
+  icon: check-circle
+
+inputs:
+  mode:
+    description: Gate mode -- quick (lint, typecheck, and Lighthouse) or full (adds build)
+    required: false
+    default: quick
+  repair:
+    description: Enable bounded deterministic repair after gate failures (workflow owner decision)
+    required: false
+    default: "false"
+  max-attempts:
+    description: Maximum repair attempts before escalation
+    required: false
+    default: "2"
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: "20"
+  post-comment:
+    description: Enable PR findings comments (workflow owner decision; requires pull_requests write)
+    required: false
+    default: "false"
+  artifact-name:
+    description: Unique report artifact name; use a matrix suffix when running multiple jobs
+    required: false
+    default: quick-gate-report
+  output-dir:
+    description: External directory for run artifacts; defaults to a runner-temp directory
+    required: false
+    default: ""
+
+outputs:
+  status:
+    description: Overall gate result -- pass, fail, or escalated
+    value: ${{ steps.nested.outputs.status }}
+  failures-json:
+    description: Path to the external failures.json (empty if pass)
+    value: ${{ steps.nested.outputs['failures-json'] }}
+  repair-status:
+    description: Repair result -- pass, escalated, or skipped
+    value: ${{ steps.normalized.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run Quick Gate implementation
+      id: nested
+      uses: $/.github/actions/quick-gate
+      with:
+        mode: ${{ inputs.mode }}
+        repair: ${{ inputs.repair }}
+        max-attempts: ${{ inputs.max-attempts }}
+        node-version: ${{ inputs.node-version }}
+        post-comment: ${{ inputs.post-comment }}
+        artifact-name: ${{ inputs.artifact-name }}
+        output-dir: ${{ inputs.output-dir }}
+    - name: Normalize repair status
+      id: normalized
+      if: always()
+      shell: bash
+      env:
+        NESTED_REPAIR_STATUS: ${{ steps.nested.outputs['repair-status'] }}
+      run: |
+        if [ -n "$NESTED_REPAIR_STATUS" ]; then
+          echo "status=$NESTED_REPAIR_STATUS" >> "$GITHUB_OUTPUT"
+        else
+          echo "status=skipped" >> "$GITHUB_OUTPUT"
+        fi

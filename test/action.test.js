@@ -129,3 +129,66 @@ test('repository CI keeps an active quality gate with meaningful plain-JS covera
     'for file in src/*.js test/*.test.js; do node --check "$file" || exit 1; done',
   );
 });
+
+test('root Marketplace action forwards the nested action contract with safe defaults', () => {
+  const rootAction = fs.readFileSync('action.yml', 'utf8');
+  const nestedAction = fs.readFileSync('.github/actions/quick-gate/action.yml', 'utf8');
+
+  assert.match(rootAction, /^name: Quick Gate$/m);
+  assert.match(rootAction, /^author: Hermes Labs$/m);
+  assert.match(rootAction, /branding:\n  color: blue\n  icon: check-circle/);
+  assert.match(rootAction, /repair:\n    description:[^\n]+\n    required: false\n    default: "false"/);
+  assert.match(rootAction, /post-comment:\n    description:[^\n]+\n    required: false\n    default: "false"/);
+  assert.match(rootAction, /artifact-name:\n    description:[^\n]+\n    required: false\n    default: quick-gate-report/);
+  assert.match(rootAction, /uses: \$\/\.github\/actions\/quick-gate/);
+  assert.match(nestedAction, /value: \$\{\{ steps\.repair\.outputs\.status \|\| steps\.repair-skip\.outputs\.status \}\}/);
+  assert.match(nestedAction, /name: \$\{\{ inputs\.artifact-name \}\}/);
+
+  for (const input of [
+    'mode',
+    'repair',
+    'max-attempts',
+    'node-version',
+    'post-comment',
+    'artifact-name',
+    'output-dir',
+  ]) {
+    assert.ok(rootAction.includes('        ' + input + ': ${{ inputs.' + input + ' }}'));
+  }
+
+  for (const output of ['status', 'failures-json', 'repair-status']) {
+    const source = output === 'repair-status'
+      ? 'steps.normalized.outputs.status'
+      : output === 'failures-json'
+        ? "steps.nested.outputs['failures-json']"
+        : 'steps.nested.outputs.' + output;
+    assert.ok(rootAction.includes('value: ${{ ' + source + ' }}'));
+  }
+  assert.match(rootAction, /id: normalized/);
+  assert.match(rootAction, /NESTED_REPAIR_STATUS: \$\{\{ steps\.nested\.outputs\['repair-status'\] \}\}/);
+  assert.match(rootAction, /echo "status=skipped" >> "\$GITHUB_OUTPUT"/);
+});
+
+test('CI and copyable example exercise the root action with least permissions', () => {
+  const workflow = fs.readFileSync('.github/workflows/ci.yml', 'utf8');
+  const example = fs.readFileSync('examples/quick-gate.yml', 'utf8');
+
+  assert.match(workflow, /marketplace-action:/);
+  assert.match(workflow, /uses: \.\//);
+  assert.match(workflow, /artifact-name: quick-gate-root/);
+  assert.match(workflow, /- run: npm run lint/);
+  assert.match(workflow, /GATE_STATUS: \$\{\{ steps\.gate\.outputs\.status \}\}/);
+  assert.match(example, /contents: read/);
+  assert.doesNotMatch(example, /pull-requests: write/);
+  assert.match(example, /actions\/checkout@[0-9a-f]{40}/);
+  assert.match(example, /run: npm ci/);
+  assert.match(example, /uses: hermes-labs-ai\/quick-gate-js@<RELEASE_COMMIT_SHA>/);
+  assert.doesNotMatch(example, /uses: hermes-labs-ai\/quick-gate-js@main/);
+  assert.doesNotMatch(workflow, /uses: hermes-labs-ai\/quick-gate-js@main/);
+  const readme = fs.readFileSync('README.md', 'utf8');
+  assert.match(readme, /root action is the intended Marketplace entry point/);
+  assert.match(readme, /@<RELEASE_COMMIT_SHA>/);
+  assert.match(readme, /do not use `@main` as a pin/);
+  assert.match(example, /repair: "false"/);
+  assert.match(example, /post-comment: "false"/);
+});
