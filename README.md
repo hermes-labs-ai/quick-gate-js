@@ -373,3 +373,37 @@ The test suite exercises the CLI, gate execution, artifact contracts, configurat
 ## About Hermes Labs
 
 [Hermes Labs](https://hermes-labs.ai) builds reliability tooling for teams shipping production agents and AI applications. Quick Gate is an open-source JavaScript/TypeScript quality-gate utility from that work.
+
+## GitHub Actions Marketplace usage
+
+The root action is the Marketplace entry point and delegates to the checked-out Quick Gate implementation. Start with the least-privilege workflow below:
+
+```yaml
+name: Quick Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Install project dependencies
+        run: npm ci
+      - name: Run Quick Gate
+        # Pin the action to the reviewed immutable commit used by your workflow.
+        uses: hermes-labs-ai/quick-gate-js@main
+        with:
+          mode: quick
+          repair: "false"
+          post-comment: "false"
+```
+
+The checkout is SHA-pinned and project dependencies are installed explicitly because Quick Gate runs the project's configured commands. The action writes run artifacts to an external runner-temporary directory and uploads a `quick-gate-report` artifact; review artifact contents before sharing them. Keep `contents: read` unless the workflow owner intentionally enables another permission. Enabling `repair` allows bounded file changes, and enabling `post-comment` requires the workflow owner to choose the corresponding pull-request write permission; both are workflow-owner decisions.

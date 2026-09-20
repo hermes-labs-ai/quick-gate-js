@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 - Made the composite action return a failing status when gate failures remain unresolved, after preserving its report and artifacts.
 - Moved the copyable Quick Gate workflow example out of the active workflow directory so it does not run against this repository's intentionally minimal package scripts.
 
+## [Unreleased]
+
+### Added
+- Added a root-level Marketplace action wrapper that forwards the existing nested Action contract while defaulting `repair` and `post-comment` to `false`.
+
 ## [0.2.2] - 2026-04-19
 
 ### Changed

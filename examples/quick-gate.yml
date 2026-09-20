@@ -9,13 +9,12 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -23,9 +22,10 @@ jobs:
         run: npm ci
 
       - name: Run Quick Gate
-        uses: hermes-labs-ai/quick-gate-js/.github/actions/quick-gate@main
+        # Pin this action to the reviewed immutable commit before use.
+        uses: hermes-labs-ai/quick-gate-js@main
         with:
           mode: quick
-          repair: "true"
+          repair: "false"
           max-attempts: "2"
-          post-comment: "true"
+          post-comment: "false"
