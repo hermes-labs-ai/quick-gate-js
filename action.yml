@@ -27,6 +27,10 @@ inputs:
     description: Enable PR findings comments (workflow owner decision; requires pull_requests write)
     required: false
     default: "false"
+  artifact-name:
+    description: Unique report artifact name; use a matrix suffix when running multiple jobs
+    required: false
+    default: quick-gate-report
   output-dir:
     description: External directory for run artifacts; defaults to a runner-temp directory
     required: false
@@ -55,6 +59,7 @@ runs:
         max-attempts: ${{ inputs.max-attempts }}
         node-version: ${{ inputs.node-version }}
         post-comment: ${{ inputs.post-comment }}
+        artifact-name: ${{ inputs.artifact-name }}
         output-dir: ${{ inputs.output-dir }}
     - name: Normalize repair status
       id: normalized

@@ -22,8 +22,9 @@ jobs:
         run: npm ci
 
       - name: Run Quick Gate
-        # Pin this action to the reviewed immutable commit before use.
-        uses: hermes-labs-ai/quick-gate-js@main
+        # Release-only: replace this marker with the immutable SHA of a release
+        # that includes the root action. Do not substitute @main.
+        uses: hermes-labs-ai/quick-gate-js@<RELEASE_COMMIT_SHA>
         with:
           mode: quick
           repair: "false"

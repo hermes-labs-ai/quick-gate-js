@@ -328,6 +328,22 @@ jobs:
 
 The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml) and a [copyable workflow example](examples/quick-gate.yml). The action executes its checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. The action fails after posting its report and uploading artifacts when the gate remains unresolved; a bounded repair that passes makes the action succeed. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
 
+### Matrix jobs
+
+Give each invocation a unique `artifact-name` when several jobs use the action in one workflow run. GitHub Artifact v4 does not allow separate jobs to upload artifacts with the same name. The default remains `quick-gate-report` for single-job workflows.
+
+For a matrix named `node-version`, pass these inputs to the Quick Gate step:
+
+```yaml
+with:
+  node-version: ${{ matrix.node-version }}
+  artifact-name: quick-gate-node-${{ matrix.node-version }}
+```
+
+Include every matrix dimension in the name when combining Node versions with operating systems or other variants. Keep downloaded reports in separate directories so identically named files such as `gate-result.json` do not overwrite each other. The repository's [CI workflow](.github/workflows/ci.yml) is a complete two-job example using the action from its own checkout.
+
+The `repair-status` output is `skipped` when the initial gate passes or repair is disabled, `pass` when repair succeeds, and `escalated` when repair does not resolve the failure. Setup failures can leave outputs unset; downstream steps should also check the action outcome.
+
 ## Safety, privacy, and limits
 
 Quick Gate is a bounded evidence and repair coordinator. It does not promise:
@@ -376,7 +392,7 @@ The test suite exercises the CLI, gate execution, artifact contracts, configurat
 
 ## GitHub Actions Marketplace usage
 
-The root action is the Marketplace entry point and delegates to the checked-out Quick Gate implementation. Start with the least-privilege workflow below:
+The root action is the intended Marketplace entry point and delegates to the checked-out Quick Gate implementation. It is present in this source checkout, but no release commit SHA for this wrapper is declared yet. After a release that includes the wrapper, replace the marker below with that release's immutable commit SHA; do not use `@main` as a pin. Start with the least-privilege workflow below:
 
 ```yaml
 name: Quick Gate
@@ -398,8 +414,9 @@ jobs:
       - name: Install project dependencies
         run: npm ci
       - name: Run Quick Gate
-        # Pin the action to the reviewed immutable commit used by your workflow.
-        uses: hermes-labs-ai/quick-gate-js@main
+        # Release-only: replace this marker with the SHA of a release that
+        # includes the root action. Do not substitute @main.
+        uses: hermes-labs-ai/quick-gate-js@<RELEASE_COMMIT_SHA>
         with:
           mode: quick
           repair: "false"
