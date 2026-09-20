@@ -20,7 +20,7 @@ jobs:
       - run: npm install
       - run: npm test
 
-  quality-gate:
+  quality-gate-matrix:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,3 +47,15 @@ jobs:
         run: |
           test "$GATE_STATUS" = pass
           test "$REPAIR_STATUS" = skipped
+
+  quality-gate:
+    needs: quality-gate-matrix
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Require every matrix gate to pass
+        env:
+          MATRIX_RESULT: ${{ needs.quality-gate-matrix.result }}
+        run: test "$MATRIX_RESULT" = success
