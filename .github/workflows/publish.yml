@@ -45,7 +45,7 @@ jobs:
       - name: Upload package tarball
         run: npm pack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: "*.tgz"
@@ -74,7 +74,7 @@ jobs:
       - name: Update npm to a trusted-publishing-capable version
         run: npm install -g npm@^11.5.1
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: npm-package
 
