@@ -6,6 +6,10 @@
 
 Quick Gate turns noisy JavaScript and TypeScript checks into one deterministic CI result with structured findings and bounded repair/escalation artifacts.
 
+Quick Gate is developed by [Hermes Labs](https://hermes-labs.ai).
+
+Hermes Labs studies failure modes in agent and LLM systems, develops open-source tools that treat language as part of the runtime, and works with teams to remediate reliability failures in production.
+
 When lint, typechecking, builds, and Lighthouse assertions fail independently, a developer has to reconstruct the state of a change from several tools and logs. Quick Gate runs the checks as one explicit gate, records what it checked and how each command ended, and gives the next engineer or agent a bounded evidence packet to act on.
 
 ## First success
@@ -385,10 +389,6 @@ The test suite exercises the CLI, gate execution, artifact contracts, configurat
 - [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — a local dual-layer memory pattern for AI agents pairing a compact markdown index with semantic retrieval from a local vector store.
 - [little-canary](https://github.com/hermes-labs-ai/little-canary) — detects prompt injection by its effect on a sacrificial canary model rather than pattern matching alone, returning block, flag, or pass before the primary model acts.
 - [fidelis](https://github.com/hermes-labs-ai/fidelis) — zero-LLM agent memory using local-first BM25, dense-vector, and reciprocal-rank-fusion retrieval, returning original passages verbatim by default. Available on PyPI as `fidelis-memory`.
-
-## About Hermes Labs
-
-[Hermes Labs](https://hermes-labs.ai) builds reliability tooling for teams shipping production agents and AI applications. Quick Gate is an open-source JavaScript/TypeScript quality-gate utility from that work.
 
 ## GitHub Actions Marketplace usage
 
