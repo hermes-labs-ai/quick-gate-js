@@ -45,7 +45,7 @@ jobs:
       - name: Upload package tarball
         run: npm pack
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: "*.tgz"
