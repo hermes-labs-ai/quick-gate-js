@@ -33,17 +33,16 @@ test('release package, lockfile, citation, and plugin metadata agree', () => {
   assert.doesNotMatch(skill, /quick-gate@0\.2\.3/);
 });
 
-test('README distinguishes the prepared release from public pre-release state', () => {
-  assert.match(readme, /\| npm runtime \| `0\.3\.2` release target; \[`0\.2\.3`\][^\n]+remains public until publication completes/);
+test('README identifies the published package and plugin release', () => {
+  assert.match(readme, /\| npm runtime \| \[`0\.3\.2`\]\(https:\/\/www\.npmjs\.com\/package\/quick-gate\/v\/0\.3\.2\) published/);
   assert.match(readme, /\| repository source \(this checkout\) \| `0\.3\.2`/);
-  assert.match(readme, /\| agent plugin \| `0\.3\.2` release target; \[`v0\.3\.1`\][^\n]+remains the latest tag until release/);
-  assert.match(readme, /releases\/tag\/v0\.3\.1/);
+  assert.match(readme, /\| agent plugin \| \[`v0\.3\.2`\]\(https:\/\/github\.com\/hermes-labs-ai\/quick-gate-js\/releases\/tag\/v0\.3\.2\) released/);
+  assert.doesNotMatch(readme, /remains public until publication completes|remains the latest tag until release/);
 });
 
-test('README does not infer publication from source metadata', () => {
-  assert.match(readme, /Source metadata prepares `0\.3\.2`; it does not prove that npm publication or a GitHub release happened/);
+test('README tells users to check each release surface independently', () => {
   assert.match(readme, /npm view quick-gate version/);
-  assert.match(readme, /After publication, verify the `0\.3\.2` artifact/);
+  assert.match(readme, /Verify the published `0\.3\.2` artifact/);
 });
 
 test('the prepared checkout version advances beyond both prior public surfaces', () => {
