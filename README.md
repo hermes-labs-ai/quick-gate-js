@@ -1,14 +1,18 @@
-# Quick Gate
+<div align="center">
 
-[![CI](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml)
-[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+<h1>Quick Gate</h1>
 
 Quick Gate turns noisy JavaScript and TypeScript checks into one deterministic CI result with structured findings and bounded repair/escalation artifacts.
 
 Quick Gate is developed by [Hermes Labs](https://hermes-labs.ai).
 
-Hermes Labs studies failure modes in agent and LLM systems, develops open-source tools that treat language as part of the runtime, and works with teams to remediate reliability failures in production.
+Hermes Labs is an agentic infrastructure company building the reliability layer for autonomous systems.
+
+[![CI](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
+</div>
 
 When lint, typechecking, builds, and Lighthouse assertions fail independently, a developer has to reconstruct the state of a change from several tools and logs. Quick Gate runs the checks as one explicit gate, records what it checked and how each command ended, and gives the next engineer or agent a bounded evidence packet to act on.
 
