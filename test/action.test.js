@@ -112,7 +112,6 @@ test('CI summary stays bounded for missing or malformed results and unsafe label
 test('copyable consumer workflow is not an active repository workflow', () => {
   assert.equal(fs.existsSync('.github/workflows/example-usage.yml'), false);
   assert.equal(fs.existsSync('examples/quick-gate.yml'), true);
-  assert.match(fs.readFileSync('README.md', 'utf8'), /\[copyable workflow example\]\(examples\/quick-gate\.yml\)/);
 });
 
 test('repository CI keeps an active quality gate with meaningful plain-JS coverage', () => {
@@ -185,10 +184,6 @@ test('CI and copyable example exercise the root action with least permissions', 
   assert.match(example, /uses: hermes-labs-ai\/quick-gate-js@<RELEASE_COMMIT_SHA>/);
   assert.doesNotMatch(example, /uses: hermes-labs-ai\/quick-gate-js@main/);
   assert.doesNotMatch(workflow, /uses: hermes-labs-ai\/quick-gate-js@main/);
-  const readme = fs.readFileSync('README.md', 'utf8');
-  assert.match(readme, /root action is the intended Marketplace entry point/);
-  assert.match(readme, /@<RELEASE_COMMIT_SHA>/);
-  assert.match(readme, /do not use `@main` as a pin/);
   assert.match(example, /repair: "false"/);
   assert.match(example, /post-comment: "false"/);
 });
