@@ -26,4 +26,6 @@ Key success condition:
 
 ## About Hermes Labs
 
+Hermes Labs owns and maintains quick-gate-js.
+
 Hermes Labs is an agentic infrastructure company building the reliability layer for autonomous systems. More at https://hermes-labs.ai.
