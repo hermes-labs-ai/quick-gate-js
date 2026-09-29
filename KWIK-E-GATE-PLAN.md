@@ -1,6 +1,6 @@
 # KWIK-E-GATE: product and architecture decision
 
-Status: 0.4.0 consolidated implementation tested locally. Five native readiness profiles have verified scoped PASS proofs; a sixth retains a reproduced upstream E2E FAIL. CodeRabbit passed the completed core/consolidation diff; the maintainer separately reviews native profiles and their consumers. Integration, identity cutover and publication are subsequent public effects.
+Status: 0.4.0 consolidated implementation tested locally. Five native readiness profiles have verified scoped PASS proofs; a sixth retains a reproduced upstream E2E FAIL. The current local source has a validated configured review and independent maintainer acceptance. Public PR integration, identity cutover and publication are separate effects.
 Evidence date: 2026-09-29. This document is the consolidation source of truth.
 
 ## Product contract
@@ -965,3 +965,31 @@ owner file exists and matches exactly; an orphan or mismatch parks before mutati
 A matching-backup acceptance test covers retry compatibility. The focused suite now
 passes 49 init/plugin cases on Python 3.11, 39 init cases on Python 3.14, and Ruff;
 the exact-source review and final committed/public receipts remain outstanding.
+
+### Consolidation verification before public update
+
+Commit `2a3a79c87aecd6571955882288f60c4c3988dee7` includes the complete
+physical-path and reversible-install correction. The independent maintainer
+accepted its exact local patch. The root Gate fast and full receipts passed;
+full ran 452 Python and 95 JavaScript tests. The configured `hermes-pr-review`
+fallback returned a validated PASS with zero findings on that commit. Its
+result is distinct from the earlier `fe5e689` CodeRabbit PASS whose raw major
+finding was suppressed, and from CodeRabbit's skipped public automatic review.
+
+The 0.4.0 wheel and sdist built from `2a3a79c`; the release identity guard passed.
+A clean Python 3.14.3 wheel install with no Node on PATH and no mandatory runtime
+dependencies produced `plan` PLANNED, `run` PASS with an exported receipt, and
+`verify` PASS. A source mutation made verification FAIL and `run` issue a FAIL
+receipt; restoring bytes made the original exported receipt verify again.
+
+Five scoped native Action runs using that same source passed and exported locally
+verifiable receipts: MCP Python, PydanticAI, Hermes Agent, pipx, and PyPA Packaging.
+For each, mutating actual checked source made the prior receipt stale and a fresh
+fast run FAIL with a receipt; restoration made the prior receipt verify again.
+Tracked consumer source remained unchanged at the end. These are scoped local
+CI-admission proofs, not upstream CI approvals. The MCP TypeScript E2E failure
+remains openly recorded in the admission packet.
+
+This evidence binds `2a3a79c`. The plan update itself changes tracked input bytes,
+so exact-source receipts must be refreshed after this documentation commit before
+push and PR readiness. The final public head and hosted checks govern integration.
