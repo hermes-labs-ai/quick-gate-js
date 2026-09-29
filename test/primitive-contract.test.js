@@ -172,3 +172,13 @@ test('stable serialization is independent of object key order', () => {
     stableStringify({ a: { c: 3, d: 4 }, b: 2 }),
   );
 });
+
+test('an entirely skipped evaluation cannot claim pass', () => {
+  const cwd = fixtureDir();
+  const result = evaluateGates({
+    cwd,
+    config: { gates: { lint: false, typecheck: false, build: false, lighthouse: false } },
+  });
+  assert.equal(result.gateResult.status, 'error');
+  assert.equal(result.gateResult.errors.at(-1).code, 'NO_CHECKS_EXECUTED');
+});

@@ -1,0 +1,34 @@
+# Proposal for pypa/packaging at 7b898d9f0b343ca06993157fc328d7caad51d5c2.
+# Explicitly prepare native nox, interpreters and frozen hook environments first.
+# Full covers native lint/build checks and the CPython 3.14 unit/coverage session;
+# it does not replace the interpreter matrix, property or downstream test sessions.
+version = 1
+
+[gate]
+fast_budget_seconds = 3.0
+review_required = false
+exclusions = [".git/**", ".nox/**", ".tox/**", ".venv/**", "**/__pycache__/**", ".pytest_cache/**", ".mypy_cache/**", ".ruff_cache/**", ".hypothesis/**", ".coverage*", "build/**", "dist/**", "**/*.egg-info/**"]
+
+[[fast]]
+name = "changed-python-lint"
+argv = ["ruff", "check", "{files}"]
+timeout_seconds = 2.0
+globs = ["**/*.py", "*.py"]
+
+[[fast]]
+name = "diff-whitespace"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+
+[[full]]
+name = "native-lint-and-distribution"
+# Native hooks may repair files; Gate rejects checked source changed by a check.
+# check-frozen-revs performs native Git remote queries: this stage needs network.
+argv = ["nox", "--download-python", "never", "--error-on-missing-interpreters", "-s", "lint"]
+timeout_seconds = 600.0
+
+[[full]]
+name = "native-tests-and-coverage"
+# Retain native installs so tests use the current source, not a stale environment.
+argv = ["nox", "--download-python", "never", "--error-on-missing-interpreters", "-s", "tests-3.14"]
+timeout_seconds = 600.0

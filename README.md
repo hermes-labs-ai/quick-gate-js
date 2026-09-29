@@ -1,445 +1,235 @@
-<div align="center">
+![KWIK-E-GATE — your local convenience code review. Don’t forget the receipt.](docs/assets/kwik-e-gate-header.jpg)
 
-<h1>Quick Gate</h1>
+# kwik-e-gate
 
-Quick Gate turns noisy JavaScript and TypeScript checks into one deterministic CI result with structured findings and bounded repair/escalation artifacts.
+**Fast local checks for coding agents. PASS / FAIL. Don't forget the receipt.**
 
-Quick Gate is developed by [Hermes Labs](https://hermes-labs.ai).
+Interpret the change against your repository’s declared gates, record what ran, and verify the
+receipt before treating the work as checked. Free, local, no daemon, no model or API
+required. Python 3.11+ and Git; zero runtime Python dependencies.
 
-Hermes Labs is an agentic infrastructure company building the reliability layer for autonomous systems.
+Developed by [Hermes Labs](https://hermes-labs.ai).
 
-[![CI](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml/badge.svg)](https://github.com/hermes-labs-ai/quick-gate-js/actions/workflows/ci.yml)
-[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+> **Unreleased 0.4.0 consolidation.** Public PyPI `hermes-gate` is 0.1.7; npm
+> `quick-gate` is 0.3.2. Install this checkout to use the new commands. The distribution remains
+> `hermes-gate`; `hermes-gate` and `kwik-gate` use the same engine.
 
-</div>
+## Start here
 
-When lint, typechecking, builds, and Lighthouse assertions fail independently, a developer has to reconstruct the state of a change from several tools and logs. Quick Gate runs the checks as one explicit gate, records what it checked and how each command ended, and gives the next engineer or agent a bounded evidence packet to act on.
-
-## First success
-
-Quick Gate requires Node.js 18 or newer and a project whose dependencies are already installed. From this repository, the verified setup is:
+From this source checkout:
 
 ```bash
-git clone https://github.com/hermes-labs-ai/quick-gate-js.git
-cd quick-gate-js
-npm install
-npx --no-install quick-gate --help
+python3 -m venv /tmp/kwik-gate-venv
+/tmp/kwik-gate-venv/bin/python -m pip install .
+# Use the installed executable in the repository you want to check:
+cd /path/to/your/git-repository
+/tmp/kwik-gate-venv/bin/kwik-gate init
+# Review .hermes/gate.toml: choose the checks that matter for this project.
+/tmp/kwik-gate-venv/bin/kwik-gate run
+/tmp/kwik-gate-venv/bin/kwik-gate verify
 ```
 
-From the JavaScript or TypeScript project you want to check, install Quick Gate as a development dependency and use the local binary. The first recipe is for POSIX shells (macOS, Linux, or WSL):
+After 0.4.0 is published, `pip install hermes-gate==0.4.0` provides both commands.
+Existing users can continue using `hermes-gate fast` and `hermes-gate full`.
 
-```bash
-npm install --save-dev quick-gate
-
-QG_CHANGED="$(mktemp)"
-QG_OUTPUT="$(mktemp -d)"
-printf 'src/app.ts\n' > "$QG_CHANGED"
-npx --no-install quick-gate run \
-  --mode quick \
-  --changed-files "$QG_CHANGED" \
-  --output-dir "$QG_OUTPUT"
-```
-
-For PowerShell, use the equivalent temporary paths and local binary:
-
-```powershell
-npm install --save-dev quick-gate
-
-$qgChanged = Join-Path ([System.IO.Path]::GetTempPath()) ("quick-gate-changed-" + [guid]::NewGuid() + ".txt")
-$qgOutput = Join-Path ([System.IO.Path]::GetTempPath()) ("quick-gate-output-" + [guid]::NewGuid())
-New-Item -ItemType Directory -Path $qgOutput | Out-Null
-"src/app.ts" | Set-Content -NoNewline $qgChanged
-npx --no-install quick-gate run `
-  --mode quick `
-  --changed-files $qgChanged `
-  --output-dir $qgOutput
-```
-
-The changed-files input is either a newline-delimited file or a JSON array. The commands above assume your project provides the underlying checks; if a check is not configured or available, Quick Gate reports that as a finding instead of inventing a result.
-
-### Verify the runtime you are about to run
-
-Quick Gate has three release surfaces that move independently. Check the row you actually depend on before you install or debug against it:
-
-| Surface | Current value | Where it's declared |
-| --- | --- | --- |
-| npm runtime | [`0.3.2`](https://www.npmjs.com/package/quick-gate/v/0.3.2) published | `package.json`, npm registry |
-| repository source (this checkout) | `0.3.2` | `package.json` |
-| agent plugin | [`v0.3.2`](https://github.com/hermes-labs-ai/quick-gate-js/releases/tag/v0.3.2) released | plugin manifests, GitHub releases |
-
-The `0.3.2` npm package and `v0.3.2` GitHub release are public. Before installing or debugging a newer version, check the registry with `npm view quick-gate version` and the GitHub releases page rather than assuming the source checkout, npm package, and plugin tag moved together.
-
-After installing into a project, read back the local runtime without asking npm to install anything:
-
-```bash
-npx --no-install quick-gate --version
-# quick-gate <installed-version>
-```
-
-Verify the published `0.3.2` artifact independently of a project checkout with its exact pin:
-
-```bash
-npx --yes quick-gate@0.3.2 --version
-# quick-gate 0.3.2
-```
-
-To inspect the source checkout instead, read its package metadata directly:
-
-```bash
-node -p "require('./package.json').version"
-# 0.3.2
-```
-
-Example output with `0.3.2`, using a throwaway directory:
-
-```console
-$ npm install --save-dev quick-gate
-added 7 packages, and audited 8 packages in 5s
-found 0 vulnerabilities
-
-$ npx --no-install quick-gate --help
-Quick Gate v0.3.2
-
-Commands:
-  quick-gate run --mode quick|full --changed-files <path>
-    --output-dir <external-directory>
-  quick-gate summarize --input .quick-gate/failures.json
-  quick-gate repair --input .quick-gate/failures.json [--output-dir <external-directory>]
-    [--max-attempts 3] [--deterministic-only]
-
-Options:
-  --deterministic-only   Skip model-assisted repair (no Ollama required)
-  --help, -h             Show this help message
-```
-
-## Agent plugin
-
-The repository root is also one agent plugin. Claude Code, Codex CLI, Gemini CLI, and `npx skills` all install the same skill, [`skills/quick-gate-js/SKILL.md`](skills/quick-gate-js/SKILL.md). The `0.3.2` plugin runs the exact `quick-gate@0.3.2` package and reports its `gate-result/v1` verdict.
-
-| Host | Install | Read back |
-| --- | --- | --- |
-| Claude Code | `claude plugin marketplace add hermes-labs-ai/quick-gate-js && claude plugin install quick-gate-js@quick-gate-js` | `claude plugin list` |
-| Codex CLI | `codex plugin marketplace add hermes-labs-ai/quick-gate-js && codex plugin add quick-gate-js@quick-gate-js` | `codex plugin list` |
-| Gemini CLI | `gemini extensions install https://github.com/hermes-labs-ai/quick-gate-js --ref main` | `gemini skills list` |
-| skills.sh | `npx skills add hermes-labs-ai/quick-gate-js` | `npx skills list` |
-
-Each host reads its own manifest:
-
-- Claude Code reads `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`.
-- Codex reads `.agents/plugins/marketplace.json`, whose entry is the repository root, and the portable Agent Plugins `plugin.json`.
-- Gemini CLI reads `gemini-extension.json` and finds the skill under `skills/`.
-
-## What it runs
-
-Quick Gate is a coordinator around the commands already defined by your project. It does not replace ESLint, TypeScript, your build, or Lighthouse.
-
-| Mode | Checks |
+| Command | Result |
 | --- | --- |
-| `quick` | lint, typecheck, and Lighthouse |
-| `full` | lint, typecheck, Lighthouse, and build |
+| `kwik-gate plan` | Explain gate selection without executing checks; returns PLANNED, never a checked PASS |
+| `kwik-gate run` | Automatically select applicable fast checks or escalate broader changes to full; issue a receipt |
+| `kwik-gate run --mode fast` | Explicit fast checks; cached only with a matching input/contract identity |
+| `kwik-gate run --mode full` | Every declared full stage, including file-driven checks on clean CI checkouts |
+| `kwik-gate run --output /external/path/receipt.json` | Run plus an exported copy of the receipt |
+| `kwik-gate verify` | Read-only verification of the latest run receipt, fast or full |
+| `kwik-gate verify --kind full` | Verify the current full receipt |
+| `kwik-gate verify --receipt /external/path/receipt.json` | Verify an exported receipt against this same local checkout |
 
-The CLI requires an explicit mode. In a project with matching npm scripts, Quick Gate uses `npm run lint`, `npm run typecheck`, `npm run build`, and an available Lighthouse script. You can override commands in `quick-gate.config.json`. If no `typecheck` script exists, it tries `npx --no-install tsc --noEmit`; if no Lighthouse script exists, the Lighthouse fallback requires an explicit output directory so its filesystem results have a known home.
+Run exits **0 for PASS, 1 for FAIL**. Stdout is JSON containing `status`, `receipt`,
+`receipt_path`, `routing`, `cached`, and elapsed time. Every started run issues a receipt,
+including missing/invalid configuration, unavailable tools, timeouts and no-check
+outcomes. A non-Git run stores its failure receipt in the user cache. If storage is
+unavailable, stdout still contains a failure receipt; it cannot report PASS.
+Help and argument-parser failures are not check executions.
 
-These are the default checks. Declare inapplicable checks explicitly in `quick-gate.config.json`; Quick Gate does not infer applicability from missing scripts. For a plain JavaScript library with a lint script, no typecheck, no build step, and no website to audit:
+Receipt files live under the worktree's Git directory, outside tracked source.
+Exports must be outside the repository. `verify` runs no checks or reviewer and
+exits 1 for missing, failed, stale or incomplete evidence. Receipts are intentionally
+local to their checkout; copying a receipt to a different checkout does not prove
+that checkout was checked.
 
-```json
-{
-  "gates": {
-    "typecheck": false,
-    "build": false,
-    "lighthouse": false
-  }
-}
+## Choose the right gate locally
+
+The default `auto` mode interprets changed paths and repository policy. Ordinary
+source changes use matching fast stages. Dependency/project contracts, tests, CI,
+gate configuration and sensitive auth/schema/migration paths escalate to full.
+The receipt records the decision, evidence, selected/skipped stages and review advice.
+`kwik-gate plan` previews that choice; it runs no tool, writes nothing and reports
+PLANNED. It does not claim that checks have passed.
+
+The selector reads no source files and calls no subprocess or model. Git discovery,
+input hashing, process startup and the checks themselves take additional time.
+This is an explainable path/policy interpretation, not semantic code comprehension.
+Extend the policy with `[routing].full_globs` and `.review_globs` for project-specific
+risk. `--mode fast` / `--mode full` explicitly select a contract.
+
+An agent or human can use the plan with an LLM when available. `kwik-gate review`
+adds the installed provider’s semantic judgment; it is separate evidence. Sensitive
+changes can recommend review while deterministic checks still work without it.
+Existing repository boundary policy remains authoritative.
+
+## Declare the checks
+
+`init` writes a reviewable `.hermes/gate.toml`, a stdlib runner, and a CI workflow.
+It refuses to overwrite existing integration files without `--force`. It never
+installs project tools. Detection is a starting point; adapt the profile for a
+monorepo or any custom build system.
+
+A minimal profile:
+
+```toml
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+exclusions = [".git/**", "node_modules/**", "dist/**", "build/**"]
+
+[[fast]]
+name = "lint"
+argv = ["npm", "run", "lint"]
+timeout_seconds = 6.0
+globs = ["**/*"]
+
+[[full]]
+name = "test"
+argv = ["npm", "test"]
+timeout_seconds = 180.0
 ```
 
-`gates` accepts only `lint`, `typecheck`, `build`, and `lighthouse` with boolean values. Omitted entries stay enabled for their mode; `build: true` still requires `full` mode. Disabled checks are recorded as `skipped` and launch no commands. Missing or failing enabled checks still fail the run. This configuration applies to the CLI, repair reruns, and the composite GitHub Action; API callers can provide the same `gates` object in their configuration.
+Use argv arrays, not shell strings. `{files}` expands to the selected paths for
+file-aware tools. Fast stages run only when their globs match; full stages receive
+all included repository inputs. Missing or wholly skipped checks never establish a
+checked PASS. The fast command budget defaults to eight seconds; hashing inputs
+and recording executable identities add overhead proportional to input size.
 
-Every run records `pass`, `fail`, `timeout`, `missing`, `error`, or `skipped` checks, command traces, exit and timeout information, findings, command versions, a snapshot digest for the checked paths, and whether output was truncated. A run exits `0` when the gate passes and `1` otherwise.
+See [configuration](docs/CONFIGURATION.md) for adapters, exclusions and optional
+review/boundary policy.
 
-## Artifacts and output directories
+## Optional Python diagnostics
 
-`run` writes artifacts to an external temporary directory by default. The CLI prints the run result and uses a directory named like `quick-gate-run-*` under the operating system temporary directory. Nothing is implicitly added to the reviewed worktree.
-
-Choose a directory explicitly when CI or another process needs a stable path. The following example continues the `QG_OUTPUT` shell variables from First success:
+For normalized Ruff/Pyright/pytest findings, use
+[Quick Gate Python (PyGate)](https://github.com/hermes-labs-ai/quick-gate-python):
 
 ```bash
-npx --no-install quick-gate run \
-  --mode quick \
-  --changed-files "$QG_CHANGED" \
-  --output-dir "$QG_OUTPUT"
+python -m pip install pygate-ci==0.3.2 ruff pyright pytest pytest-json-report
+kwik-gate init --adapter pygate
 ```
 
-An explicit run directory contains:
+This explicitly uses the installed `pygate` executable. Fast maps to its `canary`
+contract; full includes pytest. PyGate has its own native API and existing users
+keep `pygate-ci` / `pygate`. Its optional Pydantic/tool dependencies never become
+core dependencies. Both adapters produce diagnostics; the core issues the receipt.
 
-| File | Purpose |
-| --- | --- |
-| `failures.json` | Run status, changed files, gate statuses, and structured findings |
-| `run-metadata.json` | Timing, configuration source, command traces, and artifact location |
-| `gate-result.json` | Validated `gate-result/v1` result |
+## Optional JS/TS diagnostics
 
-The following commands have separate, legacy worktree behavior:
+Native commands work with any language. For normalized JS/TS findings, use the
+existing [Quick Gate adapter](https://github.com/hermes-labs-ai/quick-gate-js):
 
 ```bash
-npx --no-install quick-gate summarize \
-  --input "$QG_OUTPUT/failures.json" \
-  --output-dir "$QG_OUTPUT"
-
-npx --no-install quick-gate repair \
-  --input "$QG_OUTPUT/failures.json" \
-  --output-dir "$QG_OUTPUT" \
-  --deterministic-only
+# Explicitly install the adapter in the target project's dependencies.
+npm install --save-dev quick-gate@0.3.2
+kwik-gate init --adapter quick-gate
 ```
 
-When `--output-dir` is provided, `summarize` and `repair` keep their reports, rerun artifacts, escalation, and backup directories in that same external directory. Without it, they retain the legacy `.quick-gate/` behavior. Repair may modify project files, so inspect the diff before accepting changes.
+The generated adapter argv is `npx --no-install quick-gate`: run never downloads
+it. Review `quick-gate.config.json` and disable inapplicable gates explicitly.
+Legacy Quick Gate quick mode includes Lighthouse; for a library or fast local
+loop, set `gates.lighthouse` to `false`. Its `gate-result/v1` diagnostics are
+validated by the core before issuing a completion receipt. npm users can still
+use its standalone CLI/API without installing Python.
 
-## The next useful command
+## CI and coding agents
 
-After a failed run, turn its findings into prioritized human- and agent-readable actions:
+Generated CI runs the same `kwik-gate run --mode full` command and preserves the
+receipt as an artifact even when checks fail. Fresh workflows require the matching
+CLI version to be published. The copied runner remains a compatible check executor;
+it is not a second receipt authority.
 
-```bash
-npx --no-install quick-gate summarize \
-  --input "$QG_OUTPUT/failures.json" \
-  --output-dir "$QG_OUTPUT"
-```
-
-For repair, start with deterministic-only mode. It can apply scoped ESLint fixes, rerun the gate, and escalate when it cannot make bounded progress. Model-assisted repair is optional and only runs when Ollama is available and deterministic-only mode is not requested.
-
-```bash
-npx --no-install quick-gate repair \
-  --input "$QG_OUTPUT/failures.json" \
-  --output-dir "$QG_OUTPUT" \
-  --max-attempts 3 \
-  --deterministic-only
-```
-
-Repair exits `0` on a pass and `2` when it escalates. Its default policy is three attempts, a 150-line patch budget per attempt, a two-attempt no-improvement cap, and a 20-minute wall-clock cap. Escalation reason codes include `NO_IMPROVEMENT`, `PATCH_BUDGET_EXCEEDED`, `ARCHITECTURAL_CHANGE_REQUIRED`, `FLAKY_EVALUATOR`, and `UNKNOWN_BLOCKER`.
-
-## Embeddable API
-
-Use the API when an application needs the structured evaluation result without Quick Gate writing its own artifact files:
-
-```js
-import { evaluateGates } from 'quick-gate';
-
-const { gateResult, findings } = evaluateGates({
-  mode: 'quick',
-  cwd: process.cwd(),
-  changedFiles: ['src/app.ts'],
-});
-
-console.log(gateResult.status, findings);
-```
-
-`evaluateGates` returns a `gate-result/v1` result and does not write Quick Gate artifacts or invoke repair. It still executes the configured project commands, so those commands remain responsible for their own behavior and side effects. The result is an evaluation of the configured checks and captured inputs—not a universal correctness proof.
-
-## The shared result contract
-
-The `gate-result/v1` contract gives downstream tooling a common envelope for:
-
-- overall `pass`, `fail`, `timeout`, or `error` status;
-- checked paths and a snapshot digest;
-- per-gate check status, timing, command, timeout, and exit information;
-- structured findings and command-version information; and
-- truncation, error, configuration, package, and state-directory metadata when available.
-
-The repository validates the emitted contract against [`schemas/gate-result-v1.schema.json`](schemas/gate-result-v1.schema.json). The contract standardizes evidence shape; it does not make the underlying lint, typecheck, build, or Lighthouse evaluator correct, complete, or secure.
-
-### Machine-readable result envelope
-
-For tooling that compares results across products, the same evaluation can be
-emitted as a Hermes Reliability Lab result envelope — the ordinary
-`gate-result/v1` payload embedded verbatim, plus tool version, a hash of the
-exact input, one finding per check and per finding Quick Gate already
-produced, the exit code, a timestamp, and the Git commit when run from a
-checkout:
-
-```bash
-node src/evidence.js --mode quick
-node src/evidence.js --mode full --path path/to/project
-```
-
-It changes no gate resolution or scoring and writes nothing beyond what
-`evaluateGates` already writes (nothing). A check Quick Gate could not run —
-missing command, or an error starting it — is reported as `unknown`, not
-folded into a pass or silently treated as a code-quality failure.
-
-## Configuration
-
-Create `quick-gate.config.json` in the project root when the default command discovery is not enough:
-
-```json
-{
-  "commands": {
-    "lint": ["npm", "run", "lint"],
-    "typecheck": ["npm", "run", "typecheck"],
-    "build": ["npm", "run", "build"],
-    "lighthouse": ["npm", "run", "ci:lighthouse"]
-  },
-  "policy": {
-    "maxAttempts": 3,
-    "maxPatchLines": 150,
-    "abortOnNoImprovement": 2,
-    "timeCapMs": 1200000,
-    "commandTimeoutMs": 120000,
-    "gateTimeoutMs": 300000,
-    "outputCapBytes": 65536
-  },
-  "allowUnsafeShellCommands": false
-}
-```
-
-Prefer argv arrays. Commands run with `shell: false` by default, and command strings are rejected unless `allowUnsafeShellCommands` is explicitly enabled. Quick Gate's own fallback calls use `npx --no-install`; it does not silently install missing project packages.
-
-Environment variables for optional Ollama repair are:
-
-```bash
-QUICK_GATE_HINT_MODEL=qwen3:4b
-QUICK_GATE_PATCH_MODEL=mistral:7b
-QUICK_GATE_MODEL_TIMEOUT_MS=60000
-QUICK_GATE_ALLOW_HINT_ONLY_PATCH=0
-```
-
-Without Ollama, Quick Gate still runs deterministic gates and deterministic repair. When enabled, the model adapter invokes the local `ollama` command and provides bounded snippets of findings and selected files to it; configure and secure that local service according to your environment.
-
-## GitHub Actions
-
-For a direct workflow, keep the changed-file list and artifacts outside the checkout and make the output directory explicit:
+The consolidated core Action runs the source selected by its Git ref, with no PyPI
+installation. In this checkout use `./.github/actions/kwik-e-gate`; after integration,
+pin its reviewed commit. The existing root Action keeps the standalone JS interface.
 
 ```yaml
-name: Quick Gate
-
-on:
-  pull_request:
-    branches: [main]
-
-permissions:
-  contents: read
-
-jobs:
-  quality-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - run: npm ci
-      - name: Collect changed files
-        run: git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.sha }}" > "$RUNNER_TEMP/quick-gate-changed.txt"
-      - name: Run Quick Gate
-        run: >-
-          npx --no-install quick-gate run
-          --mode quick
-          --changed-files "$RUNNER_TEMP/quick-gate-changed.txt"
-          --output-dir "$RUNNER_TEMP/quick-gate"
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+  with:
+    fetch-depth: 0
+    persist-credentials: false
+- uses: hermes-labs-ai/quick-gate-js/.github/actions/kwik-e-gate@REVIEWED_COMMIT
+  id: gate
+  with:
+    mode: full
+- uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+  if: always()
+  with:
+    name: kwik-e-gate-receipt
+    path: ${{ steps.gate.outputs.receipt-path }}
 ```
 
-The repository also contains a composite action at [`.github/actions/quick-gate/action.yml`](.github/actions/quick-gate/action.yml) and a [copyable workflow example](examples/quick-gate.yml). The action executes its checkout's own `src/cli.js`, installs only that checkout's declared runtime dependencies, and writes run artifacts to either the `output-dir` input or a runner-temporary directory. This keeps the action and CLI versions aligned while leaving the caller's checkout free of run artifacts. The action fails after posting its report and uploading artifacts when the gate remains unresolved; a bounded repair that passes makes the action succeed. Neither the CLI nor the action has automatic merge authority; any PR comment or write permission is a workflow decision you must review.
+`REVIEWED_COMMIT` is a replacement marker: this candidate is not yet published. The
+public repository slug remains `quick-gate-js` until the compatible `kwik-e-gate`
+rename is verified. The core Action exposes `status` and `receipt-path`, including
+failing runs. For an ambiguous detached/merge checkout, supply its `base` input.
+Old JS Action users retain their original inputs/outputs; see the
+[standalone JS guide](docs/QUICK-GATE-JS.md).
 
-### Matrix jobs
+[Five native readiness examples](docs/CI-ADMISSION.md) cover MCP Python,
+Pydantic AI, Hermes Agent, pipx and PyPA packaging. Each declares its check scope and setup;
+`full` executes that profile, not every upstream matrix job. The evidence includes
+a sixth, MCP TypeScript E2E failure that remains FAIL despite passing test cases. Local compatibility
+does not imply upstream adoption or approval.
 
-Give each invocation a unique `artifact-name` when several jobs use the action in one workflow run. GitHub Artifact v4 does not allow separate jobs to upload artifacts with the same name. The default remains `quick-gate-report` for single-job workflows.
+The repository's [Agent Skill](.agents/skills/hermes-gate/SKILL.md) works in
+compatible Agent Skills hosts. The self-contained [Claude/portable plugin](claude-plugin/)
+and `hermes-gate install-codex` retain their installed hook contracts. Hooks and
+legacy Git boundaries can require a separate review receipt: this advanced policy
+is independent of the deterministic run/verify workflow. Installing hooks is an
+explicit user choice; `run` does not install them.
 
-For a matrix named `node-version`, pass these inputs to the Quick Gate step:
+## What PASS means
 
-```yaml
-with:
-  node-version: ${{ matrix.node-version }}
-  artifact-name: quick-gate-node-${{ matrix.node-version }}
-```
+A PASS means at least one declared check ran successfully and the bound inputs and
+contract stayed unchanged. Receipts bind HEAD, selected diff scope, all included
+tracked/unignored inputs, profile/runner bytes, executable bytes/execution bits,
+core implementation, check argv/results, tool version observations and time.
+Changing an unrelated included input conservatively invalidates reuse.
 
-Include every matrix dimension in the name when combining Node versions with operating systems or other variants. Keep downloaded reports in separate directories so identically named files such as `gate-result.json` do not overwrite each other. The repository's [CI workflow](.github/workflows/ci.yml) is a complete two-job example using the action from its own checkout.
+This is evidence of declared checks, not proof of correctness, complete coverage,
+hermetic execution, authenticity, or authorization to merge/release. Receipts are
+unsigned; someone who can write local state can forge evidence. Commands retain
+their own side effects, network access and flakiness. Ignored/excluded dependencies,
+external services, environment variables, clock and imported tool dependencies are
+not fully bound. Directory inputs (including gitlinks and directory symlinks) fail
+closed until represented as explicit ordinary files or handled in a separate gate.
+Output can be truncated; the receipt records that fact.
 
-The `repair-status` output is `skipped` when the initial gate passes or repair is disabled, `pass` when repair succeeds, and `escalated` when repair does not resolve the failure. Setup failures can leave outputs unset; downstream steps should also check the action outcome.
+`run` never repairs source or invokes a model. Explicit `repair` remains available;
+`review` is an optional semantic extension that uses the configured installed
+provider. API/model review being unavailable does not prevent local run/verify.
 
-## Safety, privacy, and limits
+## Migration, development and release
 
-Quick Gate is a bounded evidence and repair coordinator. It does not promise:
-
-- universal correctness, complete coverage, or a security guarantee;
-- that a passing result means the application is production-ready;
-- semantic repair, architectural changes, or a useful fix for every failure;
-- automatic merge, release, or deployment authority; or
-- hidden package installation or hidden network access.
-
-The underlying project commands can have their own network access and side effects. Command output, stderr, paths, and selected failure context can be written to artifacts. Treat artifacts as potentially sensitive and avoid uploading them to third parties without review. The optional model-assisted path calls local Ollama only when enabled; it is not a hosted model service built into Quick Gate.
-
-`repair` is the mutating command: deterministic ESLint repair and accepted model edit plans can change files, with bounded attempts and backups under `.quick-gate/`. Review `git diff`, the repair report, and any escalation evidence before committing. For security reports, see [`SECURITY.md`](SECURITY.md).
-
-## Troubleshooting
-
-- **`run requires --mode quick|full`** — pass `--mode quick` or `--mode full`; the CLI does not infer a mode.
-- **Missing-command findings** — add the corresponding npm script or configure an argv command in `quick-gate.config.json`.
-- **`EXTERNAL_STATE_DIR_REQUIRED` for Lighthouse** — pass `--output-dir /absolute/path`, or configure a Lighthouse script that writes its own results.
-- **`npx --no-install` cannot find `tsc` or `lhci`** — install the project dependency first; Quick Gate will not fetch it for you.
-- **No `.quick-gate` directory after `run`** — this is expected unless you explicitly set `--output-dir .quick-gate`; the default is external temporary storage.
-- **`canary` appears in older automation** — it remains accepted as a backward-compatible alias for `quick` and is recorded canonically as `quick`. New commands should use `quick`.
-
-Use `quick-gate --version` for the installed package version and `quick-gate --help` for usage. The version is also recorded in package metadata and run artifacts.
-
-## Development and contribution
+- [Architecture and due diligence](KWIK-E-GATE-PLAN.md)
+- [Migration and release instructions](docs/MIGRATION.md)
+- [Changelog](CHANGELOG.md), [security](SECURITY.md), [contributing](CONTRIBUTING.md)
 
 ```bash
-npm install
-npm test
+python -m pip install -e '.[test]'
+ruff check .
+pytest
+python -m build
 ```
 
-The test suite exercises the CLI, gate execution, artifact contracts, configuration, bounded repair, and argv safety. Please keep changes focused, add tests for behavior changes, and see [`CONTRIBUTING.md`](CONTRIBUTING.md) for repository conventions. The project is licensed under [Apache License 2.0](LICENSE).
+The real JS adapter roundtrip also runs in CI. To run it locally, set
+`KWIK_QUICK_GATE_CLI` to an installed checkout's `src/cli.js`, then run
+`pytest tests/test_workflow.py -k real_js_adapter_roundtrip`.
 
-## Relationship to PyGate and Quick Gate
-
-Three Hermes Labs tools share one result contract and stay separate on purpose:
-
-| Tool | Package / command | Role |
-| --- | --- | --- |
-| **HermesGate** ([hermes-gate](https://github.com/hermes-labs-ai/hermes-gate)) | PyPI `hermes-gate`, `hermes-gate` | Language-agnostic completion rail: runs a repository's declared checks and binds a PASS to exact content and tool versions in a receipt. |
-| **PyGate** ([quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python)) | PyPI `pygate-ci`, `pygate` | Python check primitive: normalizes Ruff, Pyright, and pytest into one `gate-result/v1`, with bounded lint repair. |
-| **Quick Gate** ([quick-gate-js](https://github.com/hermes-labs-ai/quick-gate-js)) | npm `quick-gate`, `quick-gate` | JavaScript/TypeScript check primitive: normalizes ESLint, TypeScript, build, and Lighthouse into one `gate-result/v1`, with bounded repair. |
-
-- **Shared primitive:** the `gate-result/v1` schema (`schemas/gate-result-v1.schema.json`) is byte-identical in all three repositories. PyGate and Quick Gate emit it; HermesGate validates it.
-- **Composition is optional:** HermesGate can wrap PyGate (0.2.0+) or Quick Gate (0.2.3+) through an opt-in [primitive adapter](https://github.com/hermes-labs-ai/hermes-gate#optional-primitive-adapters); it never installs them, and an absent, old, or invalid primitive is an error, not a pass. Each primitive is fully usable on its own.
-- **Which to use:** use PyGate or Quick Gate alone to get one normalized result for a Python or JS/TS project. Use HermesGate when you need a receipt proving which exact bytes passed which declared commands, across any stack.
-- **Names and interfaces are stable:** the three products keep their own names, commands, versions, and release cadence; this relationship adds no API change.
-
-## Also from Hermes Labs
-
-- [quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python) (PyPI: `pygate-ci`) — the Python counterpart to this repo: a deterministic Python CI quality gate that normalizes Ruff, Pyright, and pytest results into one deterministic decision, attempts bounded auto-repair, and escalates with machine-readable evidence when it cannot finish safely.
-- [lintlang](https://github.com/hermes-labs-ai/lintlang) — static analysis for AI agent configs, tool descriptions, and system prompts; catches vague tool descriptions, missing stop conditions, and schema gaps before they reach runtime.
-- [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — a local dual-layer memory pattern for AI agents pairing a compact markdown index with semantic retrieval from a local vector store.
-- [little-canary](https://github.com/hermes-labs-ai/little-canary) — detects prompt injection by its effect on a sacrificial canary model rather than pattern matching alone, returning block, flag, or pass before the primary model acts.
-- [fidelis](https://github.com/hermes-labs-ai/fidelis) — zero-LLM agent memory using local-first BM25, dense-vector, and reciprocal-rank-fusion retrieval, returning original passages verbatim by default. Available on PyPI as `fidelis-memory`.
-
-## GitHub Actions Marketplace usage
-
-The root action is the intended Marketplace entry point and delegates to the checked-out Quick Gate implementation. It is present in this source checkout, but no release commit SHA for this wrapper is declared yet. After a release that includes the wrapper, replace the marker below with that release's immutable commit SHA; do not use `@main` as a pin. Start with the least-privilege workflow below:
-
-```yaml
-name: Quick Gate
-
-on:
-  pull_request:
-    branches: [main]
-
-permissions:
-  contents: read
-
-jobs:
-  quality-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - name: Install project dependencies
-        run: npm ci
-      - name: Run Quick Gate
-        # Release-only: replace this marker with the SHA of a release that
-        # includes the root action. Do not substitute @main.
-        uses: hermes-labs-ai/quick-gate-js@<RELEASE_COMMIT_SHA>
-        with:
-          mode: quick
-          repair: "false"
-          post-comment: "false"
-```
-
-The checkout is SHA-pinned and project dependencies are installed explicitly because Quick Gate runs the project's configured commands. The action writes run artifacts to an external runner-temporary directory and uploads a `quick-gate-report` artifact; review artifact contents before sharing them. Keep `contents: read` unless the workflow owner intentionally enables another permission. Enabling `repair` allows bounded file changes, and enabling `post-comment` requires the workflow owner to choose the corresponding pull-request write permission; both are workflow-owner decisions.
+The real PyGate roundtrip is also exercised in adapter CI. Set `KWIK_PYGATE_CLI`
+to an installed `pygate` and run `pytest tests/test_routing.py -k real_pygate`.

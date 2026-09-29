@@ -251,6 +251,20 @@ test('deterministicOnly flag is recorded in repair actions', () => {
   }
 });
 
+test('repair defaults to deterministic even with Ollama installed', () => {
+  const dir = mkRepairFixture({ typeFails: true });
+  seedFailures(dir, { findingGate: 'typecheck' });
+  const tools = path.join(dir, 'tools');
+  fs.mkdirSync(tools);
+  const marker = path.join(dir, '.git', 'model-invoked');
+  const ollama = path.join(tools, 'ollama');
+  fs.writeFileSync(ollama, `#!/bin/sh\ntouch '${marker}'\nexit 1\n`, { mode: 0o755 });
+  withEnv({ PATH: `${tools}${path.delimiter}${process.env.PATH}` }, () => {
+    executeRepair({ input: '.quick-gate/failures.json', maxAttempts: 1, cwd: dir });
+  });
+  assert.equal(fs.existsSync(marker), false);
+});
+
 test('worsened findings trigger workspace rollback', () => {
   // Create a fixture where the mock patch INTRODUCES a second failure marker
   const dir = mkRepairFixture({ lintFails: true });

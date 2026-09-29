@@ -1,7 +1,7 @@
 {
   "name": "quick-gate",
-  "version": "0.3.2",
-  "description": "JavaScript and TypeScript quality gate CLI with bounded auto-repair and escalation artifacts",
+  "version": "0.4.0",
+  "description": "Optional JS/TS checks and diagnostics adapter for KWIK-E-GATE, with a standalone CLI and API",
   "type": "module",
   "exports": {
     ".": "./src/api.js",
@@ -11,8 +11,10 @@
     "quick-gate": "src/cli.js"
   },
   "files": [
-    "src/",
-    "schemas/"
+    "src/*.js",
+    "schemas/*.json",
+    "docs/assets/kwik-e-gate-header.jpg",
+    "docs/QUICK-GATE-JS.md"
   ],
   "scripts": {
     "lint": "for file in src/*.js test/*.test.js; do node --check \"$file\" || exit 1; done",

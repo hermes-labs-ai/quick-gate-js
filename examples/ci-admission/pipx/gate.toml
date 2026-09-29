@@ -1,0 +1,45 @@
+# Proposal for pypa/pipx at c2370d0e936830d1556fb7f8555930e83efe61b2.
+# Prepare tox 3.14/type/lint environments and the native package cache explicitly.
+# Native pre-commit hooks can repair files: Gate rejects a workload changed by checks.
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+review_required = false
+exclusions = [".git/**", ".tox/**", ".pipx_tests/**", "**/__pycache__/**", ".pytest_cache/**", ".ruff_cache/**", ".coverage*", "**/build/**", "dist/**", "src/pipx/version.py", "**/*.egg-info/**"]
+
+[[fast]]
+name = "changed-python-types"
+argv = ["tox", "exec", "-e", "type", "--", "ty", "check", "{files}"]
+timeout_seconds = 6.0
+globs = ["src/**/*.py"]
+
+[[fast]]
+name = "diff-whitespace"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+
+[[full]]
+name = "native-lint"
+argv = ["tox", "run", "--skip-missing-interpreters", "false", "-e", "lint"]
+timeout_seconds = 300.0
+
+[[full]]
+name = "native-types"
+argv = ["tox", "run", "--skip-missing-interpreters", "false", "-e", "type"]
+timeout_seconds = 180.0
+
+[[full]]
+name = "package-cache-ready"
+argv = ["tox", "exec", "-e", "3.14", "--", "python", "scripts/update_package_cache.py", "--check-only", "testdata/tests_packages", ".pipx_tests/package_cache/"]
+timeout_seconds = 30.0
+
+[[full]]
+name = "native-tests-and-coverage"
+# Allow scoped Git settings to reach the suite's disposable VCS fixtures. Local
+# validation uses core.hooksPath=/dev/null so host hooks cannot run in fixtures;
+# it does not disable the explicitly declared native-lint/pre-commit stage above.
+# Rebuild/reinstall the current source. --skip-pkg-install could test an old wheel
+# after a source edit while the receipt binds the newly edited checkout.
+argv = ["tox", "run", "-x", "env_run_base.pass_env+=GIT_CONFIG_*", "--skip-missing-interpreters", "false", "-e", "3.14"]
+timeout_seconds = 1800.0

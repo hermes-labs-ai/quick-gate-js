@@ -134,6 +134,7 @@ export function configIdentity(config) {
     commands: config.commands || {},
     gates: config.gates || {},
     lighthouse: config.lighthouse || {},
+    allowUnsafeShellCommands: config.allowUnsafeShellCommands === true,
   };
   return {
     version: 'config/v1',

@@ -1,8 +1,30 @@
+# kwik-e-gate changelog
+
+## 0.4.0 — unreleased consolidated candidate
+
+- Bring the dependency-free receipt/routing core into the existing Quick Gate JS
+  repository while retaining npm/PyPI package and JS Action contracts.
+- Add the source-pinned core Action at `.github/actions/kwik-e-gate`: no PyPI download.
+- Move the JS Actions' default Node runtime from 20 to 24; retain explicit runtime inputs.
+- Bind PASS to checked input, execution contract and implementation; reject mutation,
+  stale reuse and entirely skipped checks.
+- Explain local fast/full selection and always emit a terminal run receipt.
+- Keep JS repair deterministic by default; model assistance is explicit opt-in.
+- Include the supplied product header and the preserved scanner-scope demo trace.
+
+## Prior JavaScript adapter history
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [Unreleased] — 0.4.0 candidate
+
+- Define this package as the optional JS/TS adapter and standalone compatibility surface for KWIK-E-GATE.
+- Make repair deterministic by default; `--model-assisted` or API `deterministicOnly: false` explicitly opts into Ollama.
+- Reject all-skipped evaluations as `NO_CHECKS_EXECUTED`.
+- Include unsafe-shell permission in configuration identity; preserve canonical result-schema bytes and existing bin/API/mode surfaces.
+- Update the portable agent skill without implicit package downloads.
 
 ## [0.3.2] - 2026-09-20
 

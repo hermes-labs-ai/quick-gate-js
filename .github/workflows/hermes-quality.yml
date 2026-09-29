@@ -1,0 +1,48 @@
+name: Hermes quality rail
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          # The gate compares the pull request base with HEAD, so the base commit
+          # has to be in the checkout.
+          fetch-depth: 0
+          # The gate only reads the checkout. Do not leave the workflow token in
+          # .git/config where every later step and declared stage could read it.
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Install project and declared gate tools
+        run: python3 -m pip install -e '.[test]'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Run declared full gate against the pull request range
+        if: github.event_name == 'pull_request'
+        env:
+          HERMES_GATE_BASE: ${{ github.event.pull_request.base.sha }}
+        run: kwik-gate run --mode full --output "$RUNNER_TEMP/kwik-gate-receipt.json"
+      - name: Run declared full gate against every committed byte
+        if: github.event_name != 'pull_request'
+        run: kwik-gate run --mode full --output "$RUNNER_TEMP/kwik-gate-receipt.json"
+      - name: Preserve the receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: kwik-gate-receipt
+          path: ${{ runner.temp }}/kwik-gate-receipt.json
+          if-no-files-found: warn

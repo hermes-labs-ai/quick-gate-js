@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hermes-labs.ai/schemas/hermes-gate/receipt-v1.json",
+  "title": "Hermes Gate receipt v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "kind",
+    "status",
+    "created_at",
+    "repository",
+    "diff_sha256",
+    "elapsed_ms",
+    "command_versions",
+    "checks",
+    "findings"
+  ],
+  "properties": {
+    "schema": {"const": "hermes-gate/receipt-v1"},
+    "kind": {"enum": ["fast", "review", "full"]},
+    "status": {
+      "enum": ["PASS", "FAIL", "NOT_APPLICABLE", "NOT_CONFIGURED", "REVIEW_UNAVAILABLE", "PARKED", "ERROR"]
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "repository": {
+      "type": "object",
+      "required": ["root", "head", "remote"]
+    },
+    "diff_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "elapsed_ms": {"type": "integer", "minimum": 0},
+    "command_versions": {"type": "object"},
+    "checks": {"type": "array"},
+    "findings": {"type": "array"}
+  }
+}

@@ -22,7 +22,7 @@ inputs:
   node-version:
     description: Node.js version to use
     required: false
-    default: "20"
+    default: "24"
   post-comment:
     description: Enable PR findings comments (workflow owner decision; requires pull_requests write)
     required: false

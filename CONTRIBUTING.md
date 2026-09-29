@@ -1,4 +1,4 @@
-# Contributing to Quick Gate
+# Contributing to kwik-e-gate
 
 Thank you for your interest in contributing to Quick Gate. This document provides
 guidelines and information for contributors.
@@ -37,6 +37,10 @@ git clone https://github.com/hermes-labs-ai/quick-gate-js.git
 cd quick-gate-js
 npm ci --ignore-scripts
 npm test
+python -m pip install -e '.[test]'
+ruff check .
+pytest
+python -m build
 ```
 
 Keep active checkouts in a local directory outside cloud-synced folders. On
@@ -60,14 +64,17 @@ Reconcile that work only after the provider makes its files readable again.
 
 ### Maintainer gate
 
-With Hermes Gate installed, run `hermes-gate fast`, `hermes-gate full`, and
+With the core installed from this checkout, run `hermes-gate fast`, `hermes-gate full`, and
 `hermes-gate review` before handing off a code change. The canonical profile is
 `.hermes/gate.toml`: fast checks Git object integrity, configuration and install
-contracts, and whitespace; full runs the complete native `npm test` suite.
+contracts, Python lint/parse checks and whitespace; full runs both `pytest` and
+`npm test`. The Python full stage allows 360 seconds; fast retains its eight-second
+command budget.
 Independent review uses CodeRabbit. A missing reviewer is a review limitation,
 not a test failure or a successful review.
 
-The existing CI workflow runs `npm test` across its Node.js version matrix.
+CI exercises the JS adapter on Node 18/20/22/24 and the core on Python 3.11/3.14; the
+generated quality rail runs both declared suites and preserves a receipt.
 `git fsck` checks Git objects; it cannot make an evicted worktree file available
 or prove that unpublished work has been recovered.
 
@@ -79,3 +86,8 @@ Open a discussion or issue on GitHub. We are happy to help.
 
 By contributing, you agree that your contributions will be licensed under the
 Apache License 2.0.
+
+The core and JS adapter both use the unreleased 0.4.0 candidate version. Keep the
+Python wheel free of JS runtime dependencies and the npm tarball free of Python
+source. Preserve the root JS Action; the core Action lives at
+`.github/actions/kwik-e-gate/`. Public repository naming is a compatibility cutover.

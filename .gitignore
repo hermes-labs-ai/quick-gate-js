@@ -5,8 +5,20 @@ npm-debug.log*
 .npmrc
 *.tgz
 
+# Python core build and test output
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+dist/
+build/
+
 # Generated output (contains local system paths)
 demo/
+!docs/demo/
+!docs/demo/**
 
 # Internal docs
 docs/market-research-report.md

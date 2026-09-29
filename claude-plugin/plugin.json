@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "hermes-gate",
+  "description": "Receipt-bound completion rail for Claude Code: SessionStart injects the completion contract, Stop runs the cached fast gate advisory-only, and PreToolUse denies a Bash commit/push/PR boundary command missing its matching receipt.",
+  "version": "0.4.0",
+  "author": { "name": "Hermes Labs", "email": "roli@hermes-labs.ai", "url": "https://github.com/hermes-labs-ai" },
+  "homepage": "https://github.com/hermes-labs-ai/hermes-gate",
+  "repository": "https://github.com/hermes-labs-ai/hermes-gate",
+  "license": "Apache-2.0",
+  "keywords": ["completion-gate", "hooks", "receipts", "quality-assurance", "developer-tools", "hermes-labs"]
+}

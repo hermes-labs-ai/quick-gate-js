@@ -328,7 +328,9 @@ export function runDeterministicGates({
       after: snapshotAfter.snapshotDigest,
     });
   }
-  const resultStatus = snapshotChanged
+  const noChecksExecuted = checks.every((check) => check.status === 'skipped');
+  if (noChecksExecuted) errors.push({ code: 'NO_CHECKS_EXECUTED' });
+  const resultStatus = snapshotChanged || noChecksExecuted
     ? 'error'
     : checks.some((check) => check.status === 'timeout')
     ? 'timeout'

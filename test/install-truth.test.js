@@ -10,7 +10,7 @@ const claudePlugin = JSON.parse(fs.readFileSync(new URL('../.claude-plugin/plugi
 const geminiExtension = JSON.parse(fs.readFileSync(new URL('../gemini-extension.json', import.meta.url), 'utf8'));
 const citation = fs.readFileSync(new URL('../CITATION.cff', import.meta.url), 'utf8');
 const skill = fs.readFileSync(new URL('../skills/quick-gate-js/SKILL.md', import.meta.url), 'utf8');
-const RELEASE_VERSION = '0.3.2';
+const RELEASE_VERSION = '0.4.0';
 
 
 
@@ -23,7 +23,7 @@ test('release package, lockfile, citation, and plugin metadata agree', () => {
   for (const manifest of [portablePlugin, claudePlugin, geminiExtension]) {
     assert.equal(manifest.version, packageJson.version);
   }
-  assert.match(skill, /quick-gate@0\.3\.2/);
+  assert.match(skill, /quick-gate@0\.4\.0/);
   assert.doesNotMatch(skill, /quick-gate@0\.2\.3/);
 });
 
@@ -35,4 +35,5 @@ test('the prepared checkout version advances beyond both prior public surfaces',
   assert.equal(packageJson.version, RELEASE_VERSION);
   assert.notEqual(packageJson.version, '0.2.3');
   assert.notEqual(packageJson.version, '0.3.1');
+  assert.notEqual(packageJson.version, '0.3.2');
 });
