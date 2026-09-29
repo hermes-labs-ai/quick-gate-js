@@ -398,7 +398,7 @@ Three Hermes Labs tools share one result contract and stay separate on purpose:
 
 - **Shared primitive:** the `gate-result/v1` schema (`schemas/gate-result-v1.schema.json`) is byte-identical in all three repositories. PyGate and Quick Gate emit it; HermesGate validates it.
 - **Composition is optional:** HermesGate can wrap PyGate (0.2.0+) or Quick Gate (0.2.3+) through an opt-in [primitive adapter](https://github.com/hermes-labs-ai/hermes-gate#optional-primitive-adapters); it never installs them, and an absent, old, or invalid primitive is an error, not a pass. Each primitive is fully usable on its own.
-- **Which to use:** use PyGate or Quick Gate alone to get one normalized, fail-fast result for a Python or JS/TS project. Use HermesGate when you need a receipt proving which exact bytes passed which declared commands, across any stack.
+- **Which to use:** use PyGate or Quick Gate alone to get one normalized result for a Python or JS/TS project. Use HermesGate when you need a receipt proving which exact bytes passed which declared commands, across any stack.
 - **Names and interfaces are stable:** the three products keep their own names, commands, versions, and release cadence; this relationship adds no API change.
 
 ## Also from Hermes Labs
