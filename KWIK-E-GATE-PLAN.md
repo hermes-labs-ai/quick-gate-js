@@ -1,6 +1,6 @@
 # KWIK-E-GATE: product and architecture decision
 
-Status: 0.4.0 consolidated implementation tested locally. Five native readiness profiles have verified scoped PASS proofs; a sixth retains a reproduced upstream E2E FAIL. The current local source has a validated configured review and independent maintainer acceptance. Public PR integration, identity cutover and publication are separate effects.
+Status: 0.4.0 source is integrated in `hermes-labs-ai/quick-gate-js` main by PR #44. Five native readiness profiles have verified scoped PASS proofs; a sixth retains a reproduced upstream E2E FAIL. Product identity cutover and package publication remain separate effects.
 Evidence date: 2026-09-29. This document is the consolidation source of truth.
 
 ## Product contract
@@ -337,19 +337,20 @@ correctness, cross-machine portability or Windows process isolation is made.
 ## Migration / release
 
 Concrete instructions are in [docs/MIGRATION.md](docs/MIGRATION.md), with the contract
-in [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Local candidates are `hermes-gate`
-0.4.0 and `quick-gate` 0.4.0; public latest remains 0.1.7 / 0.3.2. Package names and
+in [docs/CONFIGURATION.md](docs/CONFIGURATION.md). Integrated source versions are
+`hermes-gate` 0.4.0 and `quick-gate` 0.4.0. Package names and
 schemas remain stable, old receipts are regenerated, and model repair opt-in is explicit.
 The combined repository's tag push triggers npm publication; GitHub release publication
 triggers PyPI. Follow the actual coordinated event sequence in MIGRATION.md, rather than
 the earlier separate-repository core-first idea. Run identity guards and install/read
-back published artifacts. No commit, push, tag or publication has been performed.
+back published artifacts. No 0.4.0 tag or registry publication was performed by this work.
 
-The canonical source is the `quick-gate-js-kwik` isolated worktree on
-`codex/kwik-e-gate-consolidation`. The sibling core candidate remains a historical
-comparison; the Python-adapter worktree contains role documentation, not another engine.
-Original checkouts and unrelated state are preserved. Independently owned core/PyGate
-pull requests are not incorporated or overwritten.
+The canonical source is the public `hermes-labs-ai/quick-gate-js` main branch at
+merge commit `d312dd2b803dddc0af8f4546f950c31911001319`. The isolated worktree
+and sibling core candidate remain historical comparisons; the Python-adapter worktree
+contains role documentation, not another engine. Original checkouts and unrelated
+state were preserved. Independently owned core/PyGate pull requests were not
+incorporated or overwritten.
 
 ## Public identity and redirects: final due diligence
 
@@ -1009,4 +1010,40 @@ The maintainer caught a pre-guard parser barrier in the wrapper's unnecessary
 Removing it keeps the shim parseable on older Python 3 hosts so the version guard
 can answer before any bundled-core import. This is an explicit host compatibility
 boundary, not a change to the Python 3.11+ core requirement. Final committed
-receipts, review and hosted results follow.
+receipts, review and hosted results are recorded below.
+
+## Integrated 0.4.0 source and remaining cutover
+
+[Consolidation PR #44](https://github.com/hermes-labs-ai/quick-gate-js/pull/44)
+merged the exact accepted head `fd9e21c48bc0b3117df6255c52cb3f44d3875c2b`
+on 2026-09-29 at 17:30:22 UTC, producing main commit
+`d312dd2b803dddc0af8f4546f950c31911001319`. The README presents the supplied
+header under lowercase `kwik-e-gate`. Both package source versions are 0.4.0;
+the three historical package identities and existing Action paths remain intact.
+
+The final local fast/full receipts passed; full ran 453 Python and 95 JavaScript
+tests plus Ruff and repository integrity. The configured `hermes-pr-review`
+fallback returned a validated PASS on the exact head with zero findings. The
+independent maintainer and GitHub steward accepted that same public head after
+checking prior material findings. Wheel/sdist build and release identity passed.
+Five scoped native consumer receipts remain verifiable against the unchanged
+executing core, including stale-source and recovery probes. The separate MCP
+TypeScript E2E failure remains disclosed.
+
+Hosted checks for Node 18/20/22/24, Python 3.11/3.14, both quality matrices,
+marketplace Action, full receipt and required quality gate all passed on that
+head. Public CodeRabbit reported a terminal skipped review because automatic
+reviews are disabled, and Sourcery reported that the diff exceeded its fetch
+limit; neither was counted as technical acceptance. The local validated review
+and independent exact-head steward review supplied the technical acceptance.
+
+The remaining owner-controlled cutover is: arrange and verify the repository-bound
+publisher identities and any required release environment approval; then follow
+[the publication sequence](docs/MIGRATION.md#publication-sequence) for the npm
+tag-trigger and PyPI release-trigger with public artifact readback. A literal
+repository slug change to `kwik-e-gate` requires a working old-path Actions
+compatibility surface first, with an explicit choice about old web/Git redirects.
+No repository deletion, unpublishing, package deprecation, tag movement, publisher
+account change, 0.4.0 publication, or slug rename was part of PR #44. Upstream
+admission still requires the individual maintainers' intake processes and approval;
+the five local profiles are technical proofs, not upstream integrations.
