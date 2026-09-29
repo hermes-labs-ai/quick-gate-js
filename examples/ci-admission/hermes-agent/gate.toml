@@ -1,0 +1,60 @@
+# Portable-contract lane at fc042f1d67bc393bf43920e92d4eb5082eddedfb.
+# Use upstream PM to prepare Ruff 0.15.10 explicitly, then put that Python on PATH.
+# This covers native blocking guards; it does not replace the large pytest matrix.
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+review_required = false
+exclusions = [".git/**", ".venv/**", "**/node_modules/**", "**/__pycache__/**", ".pytest_cache/**", ".ruff_cache/**", ".coverage*", "**/build/**", "**/dist/**", "**/*.egg-info/**"]
+
+[[fast]]
+name = "changed-python-lint"
+argv = ["python3", "-m", "ruff", "check", "{files}"]
+timeout_seconds = 6.0
+globs = ["**/*.py"]
+
+[[fast]]
+name = "diff-whitespace"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+
+[[full]]
+name = "blocking-ruff"
+argv = ["python3", "-m", "ruff", "check", "."]
+timeout_seconds = 60.0
+
+[[full]]
+name = "windows-footguns"
+argv = ["python3", "scripts/check-windows-footguns.py", "--all"]
+timeout_seconds = 60.0
+
+[[full]]
+name = "bash-shebangs"
+argv = ["python3", "scripts/check_bash_shebangs.py"]
+timeout_seconds = 60.0
+
+[[full]]
+name = "portable-scratch-paths"
+argv = ["python3", "scripts/check_no_tmp_literals.py"]
+timeout_seconds = 60.0
+
+[[full]]
+name = "comment-preserving-yaml"
+argv = ["python3", "scripts/check_config_yaml_writers.py"]
+timeout_seconds = 60.0
+
+[[full]]
+name = "native-os-markers"
+argv = ["python3", "scripts/ci/check_os_marker_fakes.py"]
+timeout_seconds = 60.0
+
+[[full]]
+name = "profile-archive-boundary"
+argv = ["python3", "scripts/ci/check_profile_archive_boundary.py"]
+timeout_seconds = 60.0
+
+[[full]]
+name = "lazy-dependency-imports"
+argv = ["python3", "scripts/ci/check_lazy_deps_imports.py"]
+timeout_seconds = 60.0

@@ -1,0 +1,8 @@
+{"type":"finding","severity":"critical","category":"security","message":"User-controlled redirect permits an external destination.","fileName":"src/auth.py","line":41}
+{"type":"finding","severity":"major","category":"correctness","message":"The retry loop drops the final queued item.","fileName":"src/queue.py","line":73}
+{"type":"finding","severity":"major","category":"data-loss","message":"A failed write truncates the existing file before replacement.","fileName":"src/store.py","line":18}
+{"type":"finding","severity":"major","category":"concurrency","message":"Two workers can consume the same lease.","fileName":"src/worker.py","line":95}
+{"type":"finding","severity":"major","category":"api-contract","message":"The endpoint returns null where clients require an array.","fileName":"src/api.py","line":12}
+{"type":"finding","severity":"low","category":"style","message":"Prefer a shorter variable name.","fileName":"src/api.py","line":13}
+{"type":"finding","severity":"info","category":"documentation","message":"Expand this comment.","fileName":"src/api.py","line":14}
+{"type":"complete"}

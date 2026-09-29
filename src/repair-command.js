@@ -172,7 +172,7 @@ function runRepairActions(cwd, failures, policy, deterministicOnly, stateDir) {
   };
 }
 
-export function executeRepair({ input, maxAttempts, deterministicOnly = false, cwd = process.cwd(), outputDir }) {
+export function executeRepair({ input, maxAttempts, deterministicOnly = true, cwd = process.cwd(), outputDir }) {
   const stateDir = path.resolve(outputDir || path.join(cwd, '.quick-gate'));
   if (outputDir) {
     const relativeState = path.relative(path.resolve(cwd), stateDir);

@@ -1,35 +1,15 @@
-# quick-gate-js
+# kwik-e-gate
 
-Deterministic JavaScript and TypeScript quality gate CLI. Repo name: `quick-gate-js`; npm package name: `quick-gate` (`npm install -g quick-gate`).
+Local deterministic checks and content-bound receipts for coding agents.
+Python 3.11+ and Git; zero core runtime dependencies. No model or API is required.
 
-Use this repo when you need to:
-- combine ESLint, TypeScript, build, and Lighthouse checks into one gate result
-- produce escalation artifacts for CI or agents
-- attempt bounded deterministic repair before handing work off
+- README.md: source install and plan → run → verify workflow.
+- docs/CONFIGURATION.md: repository-owned checks, routing and optional adapters.
+- docs/QUICK-GATE-JS.md: compatible npm quick-gate CLI/API and explicit repair.
+- docs/MIGRATION.md: versions, existing users, Actions and release sequence.
+- KWIK-E-GATE-PLAN.md: architecture, source-placement decision and validation.
 
-Primary CLI:
-- `quick-gate run --mode quick|full --changed-files <path>`
-- `quick-gate summarize --input <failures.json>`
-- `quick-gate repair --input <failures.json>`
-
-Outputs:
-- failures, run metadata, repair report, escalation, and agent-brief artifacts under `.quick-gate/`
-
-Do not use this repo as:
-- a generic lint dashboard
-- a semantic code-fix engine
-- a replacement for the underlying project tooling
-
-Key success condition:
-- the same gate outputs produce the same normalized artifacts and escalation decisions
-
-
-Related Hermes Labs tools:
-- [hermes-gate](https://github.com/hermes-labs-ai/hermes-gate) (PyPI `hermes-gate`): receipt-bound completion rail that can optionally wrap this tool through an opt-in adapter.
-- [quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python): PyGate (PyPI `pygate-ci`), the sibling primitive for the other language. All three share one byte-identical `gate-result/v1` schema; see README "Relationship to PyGate and Quick Gate".
-
-## About Hermes Labs
-
-Hermes Labs owns and maintains quick-gate-js.
-
-Hermes Labs is an agentic infrastructure company building the reliability layer for autonomous systems. More at https://hermes-labs.ai.
+The 0.4.0 consolidated candidate is local and unreleased. Run always returns a
+PASS/FAIL receipt. PASS proves the declared checks ran against the bound inputs;
+it is not proof of correctness or authorization to publish. plan is read-only;
+verify rejects stale evidence. Optional model review is a separate command.

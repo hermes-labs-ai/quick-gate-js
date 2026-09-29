@@ -56,6 +56,15 @@ test('loadConfig rejects misspelled gate names and non-boolean applicability', (
   }
 });
 
+test('unsafe shell permission is part of the execution contract identity', () => {
+  const dir = tmpDir();
+  const configPath = path.join(dir, 'quick-gate.config.json');
+  fs.writeFileSync(configPath, JSON.stringify({ allowUnsafeShellCommands: false }));
+  const before = loadConfig(dir).config_digest;
+  fs.writeFileSync(configPath, JSON.stringify({ allowUnsafeShellCommands: true }));
+  assert.notEqual(loadConfig(dir).config_digest, before);
+});
+
 test('loadChangedFiles parses newline-delimited file', () => {
   const dir = tmpDir();
   const filePath = path.join(dir, 'changed.txt');

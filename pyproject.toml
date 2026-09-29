@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermes-gate"
+version = "0.4.0"
+description = "KWIK-E-GATE: fast local checks and content-bound receipts for coding agents"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+dependencies = []
+authors = [{ name = "Hermes Labs", email = "roli@hermes-labs.ai" }]
+keywords = [
+    "ai-agents",
+    "coding-agent",
+    "completion-gate",
+    "ci",
+    "developer-tools",
+    "hermes-labs",
+    "quality-assurance",
+    "receipts",
+    "reproducibility",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://hermes-labs.ai/open-source"
+Documentation = "https://github.com/hermes-labs-ai/quick-gate-js#readme"
+Repository = "https://github.com/hermes-labs-ai/quick-gate-js"
+Issues = "https://github.com/hermes-labs-ai/quick-gate-js/issues"
+Changelog = "https://github.com/hermes-labs-ai/quick-gate-js/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1", "ruff==0.16.8", "build==1.6.1", "PyYAML==6.0.3"]
+
+[project.scripts]
+hermes-gate = "hermes_gate.cli:main"
+kwik-gate = "hermes_gate.cli:kwik_main"
+hermes-gate-claude-review = "hermes_gate.claude_review:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["hermes_gate*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+hermes_gate = ["schemas/*.json"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.per-file-target-version]
+# This bootstrap must run on Python 3.10 to receipt an unsupported core runtime.
+".github/actions/kwik-e-gate/run.py" = "py310"

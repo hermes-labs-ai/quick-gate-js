@@ -1,0 +1,45 @@
+# Proposal for modelcontextprotocol/typescript-sdk at dd22ba25ddbe7cd8822e1fe9c738a974996a28f6.
+# Explicitly install pnpm 10.26.1 and the frozen workspace dependencies first.
+# These are the native Node CI checks, not its OS/runtime/conformance matrix.
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+review_required = false
+exclusions = [".git/**", "**/node_modules/**", "**/dist/**", "**/*.tsbuildinfo", "docs/api/**", "docs/.vitepress/cache/**", "docs/.vitepress/dist/**", "docs/v1/content/**", "docs/v1/.vitepress/cache/**", "docs/v1/.vitepress/dist/**", "results/**", "tmp/**", "logs/**", "**/*.log"]
+
+[[fast]]
+name = "changed-file-format"
+argv = ["pnpm", "exec", "prettier", "--check", "{files}"]
+timeout_seconds = 6.0
+globs = ["**/*.ts", "**/*.js", "**/*.json", "**/*.md", "**/*.yml", "**/*.yaml"]
+
+[[fast]]
+name = "diff-whitespace"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+
+[[full]]
+name = "native-checks-and-docs"
+argv = ["pnpm", "run", "check:all"]
+timeout_seconds = 600.0
+
+[[full]]
+name = "workspace-build"
+argv = ["pnpm", "run", "build:all"]
+timeout_seconds = 300.0
+
+[[full]]
+name = "distribution-types"
+argv = ["node", "scripts/smoke-dist-types.mjs"]
+timeout_seconds = 120.0
+
+[[full]]
+name = "native-unit-tests"
+argv = ["pnpm", "-r", "--filter", "!@modelcontextprotocol/test-e2e", "test"]
+timeout_seconds = 600.0
+
+[[full]]
+name = "native-e2e-tests"
+argv = ["pnpm", "--filter", "@modelcontextprotocol/test-e2e", "test"]
+timeout_seconds = 300.0

@@ -4,7 +4,7 @@ version = 1
 fast_budget_seconds = 8.0
 full_required_local = true
 adapter_status = "NATIVE_DEFAULT"
-exclusions = [".git/**", ".hermes/hermes_gate_runner.py", ".pytest_cache/**", ".ruff_cache/**", "**/__pycache__/**", "vendor/**", "node_modules/**", "dist/**", "build/**"]
+exclusions = [".git/**", ".hermes/hermes_gate_runner.py", ".pytest_cache/**", ".ruff_cache/**", "**/__pycache__/**", "vendor/**", "node_modules/**", "dist/**", "build/**", "**/*.egg-info/**"]
 
 [adapter]
 enabled = false
@@ -22,7 +22,7 @@ blocking_threshold = "MEDIUM"
 [review]
 provider = "coderabbit"
 argv = ["coderabbit", "review", "--agent"]
-timeout_seconds = 180.0
+timeout_seconds = 600.0
 material_severities = ["critical", "major"]
 material_categories = ["correctness", "security", "data-loss", "concurrency", "api-contract"]
 fallback_argv = []
@@ -61,4 +61,28 @@ globs = ["**/*"]
 name = "test"
 argv = ["npm", "test"]
 timeout_seconds = 180.0
+globs = ["**/*"]
+
+[[fast]]
+name = "python-ruff"
+argv = ["ruff", "check", "{files}"]
+timeout_seconds = 3.0
+globs = ["**/*.py"]
+
+[[fast]]
+name = "python-parse"
+argv = ["python3", "-c", "import ast,pathlib,sys; [ast.parse(pathlib.Path(p).read_bytes(), filename=p) for p in sys.argv[1:]]", "{files}"]
+timeout_seconds = 3.0
+globs = ["**/*.py"]
+
+[[full]]
+name = "python-ruff"
+argv = ["ruff", "check", "."]
+timeout_seconds = 60.0
+globs = ["**/*"]
+
+[[full]]
+name = "python-test"
+argv = ["python3", "-m", "pytest"]
+timeout_seconds = 360.0
 globs = ["**/*"]

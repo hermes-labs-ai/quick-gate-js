@@ -1,0 +1,44 @@
+name: kwik-e-gate
+description: Local deterministic checks and a receipt from the source pinned by this Action ref
+author: Hermes Labs
+
+inputs:
+  mode:
+    description: Select auto, fast or full checks
+    required: false
+    default: auto
+  working-directory:
+    description: Git checkout containing the repository-owned .hermes/gate.toml
+    required: false
+    default: .
+  base:
+    description: Optional explicit committed comparison base
+    required: false
+    default: ""
+  python-version:
+    description: Python 3.11 or newer for the dependency-free gate core
+    required: false
+    default: "3.11"
+
+outputs:
+  status:
+    description: PASS or FAIL
+    value: ${{ steps.gate.outputs.status }}
+  receipt-path:
+    description: External receipt for a started runner, including check or core-loading failures
+    value: ${{ steps.gate.outputs.receipt-path }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Run the pinned source core
+      id: gate
+      shell: bash
+      env:
+        KWIK_GATE_MODE: ${{ inputs.mode }}
+        KWIK_GATE_DIRECTORY: ${{ inputs.working-directory }}
+        KWIK_GATE_BASE: ${{ inputs.base }}
+      run: python -I "$GITHUB_ACTION_PATH/run.py"

@@ -1,6 +1,6 @@
 {
-  "title": "quick-gate-js: deterministic JS/TS quality gate with bounded auto-repair",
-  "description": "quick-gate-js is a deterministic JS/TS quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one deterministic result, with bounded auto-repair and structured escalation evidence. Published to npm as the package quick-gate.",
+  "title": "kwik-e-gate: local checks and content-bound receipts for coding agents",
+  "description": "kwik-e-gate selects repository-owned checks and issues local receipts bound to what ran. Its Python core has zero runtime dependencies; optional quick-gate and PyGate adapters preserve standalone JS/TS and Python diagnostics. Model review and bounded repair are explicit optional commands.",
   "upload_type": "software",
   "license": "Apache-2.0",
   "creators": [

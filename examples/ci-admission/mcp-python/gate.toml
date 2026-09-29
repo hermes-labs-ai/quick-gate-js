@@ -1,0 +1,40 @@
+# Proposal for modelcontextprotocol/python-sdk at f1b6589088534632fef92238ee9750951e3c0185.
+# Install the repository's locked development environment explicitly before running.
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+review_required = false
+exclusions = [".git/**", ".venv/**", "**/__pycache__/**", ".pytest_cache/**", ".ruff_cache/**", ".coverage*", "htmlcov/**", "build/**", "dist/**", "**/*.egg-info/**"]
+
+[[fast]]
+name = "changed-python-lint"
+argv = ["uv", "run", "--frozen", "--no-sync", "ruff", "check", "{files}"]
+timeout_seconds = 6.0
+globs = ["**/*.py"]
+
+[[fast]]
+name = "diff-whitespace"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+
+[[full]]
+name = "python-lint"
+argv = ["uv", "run", "--frozen", "--no-sync", "ruff", "check", "."]
+timeout_seconds = 60.0
+
+[[full]]
+name = "python-format"
+argv = ["uv", "run", "--frozen", "--no-sync", "ruff", "format", "--check", "."]
+timeout_seconds = 60.0
+
+[[full]]
+name = "linux-types"
+# The upstream shared-check job runs on Ubuntu; make that target explicit on macOS too.
+argv = ["uv", "run", "--frozen", "--no-sync", "pyright", "--pythonplatform", "Linux"]
+timeout_seconds = 180.0
+
+[[full]]
+name = "tests-coverage-and-pragmas"
+argv = ["./scripts/test"]
+timeout_seconds = 600.0

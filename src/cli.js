@@ -7,7 +7,7 @@ import { loadChangedFiles } from './fs-utils.js';
 import { executeRun } from './run-command.js';
 import { executeSummarize } from './summarize-command.js';
 import { executeRepair } from './repair-command.js';
-import { checkEnvironment, hasOllama } from './env-check.js';
+import { checkEnvironment } from './env-check.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -33,10 +33,11 @@ Commands:
     --output-dir <external-directory>
   quick-gate summarize --input .quick-gate/failures.json
   quick-gate repair --input .quick-gate/failures.json [--output-dir <external-directory>]
-    [--max-attempts 3] [--deterministic-only]
+    [--max-attempts 3] [--model-assisted]
 
 Options:
-  --deterministic-only   Skip model-assisted repair (no Ollama required)
+  --model-assisted       Opt into local Ollama repair (never used by run)
+  --deterministic-only   Keep deterministic repair (the default)
   --help, -h             Show this help message`);
 }
 
@@ -53,7 +54,7 @@ async function main() {
 
   const args = parseArgs(rest);
 
-  const warnings = checkEnvironment({ command: cmd });
+  const warnings = checkEnvironment({ command: cmd, modelAssisted: args['model-assisted'] === true });
   for (const w of warnings) {
     console.error(`[quick-gate] ${w}`);
   }
@@ -93,7 +94,7 @@ async function main() {
       if (!args.input) {
         throw new Error('repair requires --input <path>');
       }
-      const deterministicOnly = args['deterministic-only'] === true || !hasOllama();
+      const deterministicOnly = args['deterministic-only'] === true || args['model-assisted'] !== true;
       const result = executeRepair({
         input: String(args.input),
         maxAttempts: args['max-attempts'],

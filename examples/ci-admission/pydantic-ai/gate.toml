@@ -1,0 +1,44 @@
+# Local, scoped proposal at a5b47bffc35b46cdbccba715584e0d91089a9c17.
+# Root AGENTS.md reserves broad Pyright/pytest/coverage checks for upstream CI.
+# This profile covers offline agent behavior and TestModel types; it is not full CI.
+# Explicit setup: uv sync --frozen --all-packages --group lint --python 3.13.
+version = 1
+
+[gate]
+fast_budget_seconds = 8.0
+review_required = false
+# These four directory aliases are not consumed by the declared checks. Their
+# canonical .agents/skills/<name>/SKILL.md files remain bound. Alias topology is
+# excluded; a new directory alias still fails closed rather than being ignored.
+exclusions = [".git/**", ".venv/**", "**/__pycache__/**", ".pytest_cache/**", ".ruff_cache/**", ".coverage*", "htmlcov/**", "**/build/**", "**/dist/**", "**/*.egg-info/**", ".claude/skills/complete-partial-pr", ".claude/skills/i-have-adhd", ".claude/skills/poweruser-feature-audit", ".claude/skills/pushing-commits-to-the-repo"]
+
+[[fast]]
+name = "changed-python-lint"
+argv = ["uv", "run", "--frozen", "--no-sync", "ruff", "check", "{files}"]
+timeout_seconds = 6.0
+globs = ["**/*.py"]
+
+[[fast]]
+name = "diff-whitespace"
+argv = ["git", "diff", "--check"]
+timeout_seconds = 1.0
+
+[[full]]
+name = "agent-scope-lint"
+argv = ["uv", "run", "--frozen", "--no-sync", "ruff", "check", "tests/test_agent.py", "pydantic_ai_slim/pydantic_ai/models/test.py"]
+timeout_seconds = 30.0
+
+[[full]]
+name = "agent-scope-format"
+argv = ["uv", "run", "--frozen", "--no-sync", "ruff", "format", "--check", "tests/test_agent.py", "pydantic_ai_slim/pydantic_ai/models/test.py"]
+timeout_seconds = 30.0
+
+[[full]]
+name = "test-model-types"
+argv = ["uv", "run", "--frozen", "--no-sync", "pyright", "pydantic_ai_slim/pydantic_ai/models/test.py"]
+timeout_seconds = 120.0
+
+[[full]]
+name = "offline-agent-behavior"
+argv = ["uv", "run", "--frozen", "--no-sync", "pytest", "tests/test_agent.py", "--record-mode=none", "-q"]
+timeout_seconds = 300.0

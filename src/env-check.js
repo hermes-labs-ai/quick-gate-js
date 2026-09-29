@@ -22,14 +22,14 @@ export function hasRsync() {
   return commandExists('rsync');
 }
 
-export function checkEnvironment({ command }) {
+export function checkEnvironment({ command, modelAssisted = false }) {
   const warnings = [];
 
   if (!hasGit()) {
     warnings.push('git not found -- repo metadata (branch, remote) will be unavailable.');
   }
 
-  if (command === 'repair' && !hasOllama()) {
+  if (command === 'repair' && modelAssisted && !hasOllama()) {
     warnings.push('Ollama not found -- running deterministic fixes only (eslint --fix). Install Ollama for model-assisted repair: https://ollama.com');
   }
 
