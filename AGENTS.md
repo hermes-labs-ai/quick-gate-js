@@ -1,10 +1,14 @@
 # AGENTS.md
 
+<!-- Instruction contract v1.0 — 2026-09-29 -->
+
+Priority order: preserve deterministic gate results and public CLI/API behavior; then keep repairs bounded; then minimize the diff. Treat each user request as an independent task and carry prior task state forward only when the user explicitly asks.
+
 Quick Gate is a deterministic JavaScript and TypeScript CI gate with bounded repair and escalation artifacts.
 
 ## Use it for
 
-- running one fail-fast gate over lint, typecheck, build, and Lighthouse results
+- running one deterministic gate over lint, typecheck, build, and Lighthouse results
 - generating machine-readable artifacts for follow-up agents or humans
 - attempting bounded deterministic repair before escalating
 
