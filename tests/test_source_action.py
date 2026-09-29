@@ -50,7 +50,7 @@ def test_pinned_source_action_preserves_failure_receipts(tmp_path: Path, case: s
 
 @pytest.mark.parametrize("case", [
     "unsupported-python", "missing-core", "missing-initializer", "unwritable-export",
-    "symlink-loop",
+    "symlink-loop", "missing-directory", "not-a-directory", "directory-symlink",
 ])
 def test_action_bootstrap_failure_is_receipted(tmp_path: Path, case: str) -> None:
     repo = tmp_path / "consumer"
@@ -69,6 +69,14 @@ def test_action_bootstrap_failure_is_receipted(tmp_path: Path, case: str) -> Non
     if case == "symlink-loop":
         directory = tmp_path / "loop"
         directory.symlink_to("loop")
+    elif case == "missing-directory":
+        directory = tmp_path / "missing-consumer"
+    elif case == "not-a-directory":
+        directory = tmp_path / "consumer-file"
+        directory.write_text("not a checkout\n")
+    elif case == "directory-symlink":
+        directory = tmp_path / "consumer-alias"
+        directory.symlink_to(repo, target_is_directory=True)
     output = tmp_path / "outputs"
     env = dict(os.environ, RUNNER_TEMP=str(runner_temp), GITHUB_OUTPUT=str(output),
                KWIK_GATE_DIRECTORY=str(directory), KWIK_GATE_MODE="full")
@@ -89,7 +97,7 @@ def test_action_bootstrap_failure_is_receipted(tmp_path: Path, case: str) -> Non
     if case in {"missing-core", "missing-initializer"}:
         assert "pinned core source is missing" in result["reason"]
     assert "status=FAIL\n" in output.read_text()
-    if case in {"unwritable-export", "symlink-loop"}:
+    if case in {"unwritable-export", "symlink-loop", "missing-directory", "not-a-directory"}:
         assert result["export_path"] is None
         assert "receipt-path=\n" in output.read_text()
         assert "receipt export failed" in result["reason"]

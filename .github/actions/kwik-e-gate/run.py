@@ -29,7 +29,9 @@ def _bootstrap_failure(reason: str, export: Path) -> dict:
     exported = False
     try:
         # Bootstrap failure evidence is never reusable as a checked PASS.
-        directory = Path(os.environ.get("KWIK_GATE_DIRECTORY", ".")).resolve()
+        directory = Path(os.environ.get("KWIK_GATE_DIRECTORY", ".")).resolve(strict=True)
+        if not directory.is_dir():
+            raise OSError("working directory must be an existing directory")
         if export.resolve().is_relative_to(directory):
             raise OSError("receipt export must be outside the working directory")
         export.write_text(json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8")

@@ -831,3 +831,37 @@ rebinding/release when source acceptance is complete; select the old Actions com
 cutover before a literal lowercase `kwik-e-gate` rename; and supply human accountability/
 issue alignment where an upstream project's intake requires it. Package/API names and
 historical tags stay compatible. No additional architecture decision is needed.
+
+### Hosted Python 3.14 bootstrap correction
+
+The consolidation is public as PR #44 in the existing product repository. At initial
+head `b6986b8a9d2b074c741537b5a71694b92db2fbe0`, hosted Node 18/20/22/24,
+Python 3.11, generated quality rail and real-adapter full-receipt jobs passed.
+The Python 3.14 job exposed a platform assumption in bootstrap export: non-strict
+`Path.resolve()` can return an unresolved symlink loop instead of raising. The
+existing regression correctly held the integration. The failure was reproduced
+locally with Python 3.14.7; the test is retained rather than relaxed by version.
+
+Bootstrap now requires strict resolution of an existing working directory before
+proving that an export is outside it. Missing and regular-file working directories
+have dedicated failure cases. Valid directory symlinks continue to resolve, and the
+new receipt path remains non-strict because it does not exist yet. If storage cannot
+be established, stdout still contains the FAIL receipt and the Action exports an
+empty receipt path. No reusable binding or checked PASS can arise from bootstrap
+failure. The maintainer accepted this invariant; final patch/hosted acceptance is
+still required.
+
+All five consumer profiles were refreshed with this core and verified, including new
+actual-source staleness/native FAIL/exact-restoration probes; tracked consumer source
+is unchanged. This Action-only correction leaves their core/profile/tool bindings
+unchanged. Their local results do not imply upstream approval.
+
+Hosted CodeRabbit's SUCCESS is explicitly a skipped review (automatic review disabled
+in organization settings). Sourcery's terminal SKIPPED/COMMENTED result states that it
+cannot fetch a diff over 20,000 lines. Neither is technical review acceptance. Exact
+configured local CodeRabbit reviews and independent maintainer/steward acceptance are
+recorded separately; settings and reviewer findings are not suppressed for integration.
+The maintainer accepted the actual three-file correction with no material finding.
+All 12 source Action cases pass locally on both Python 3.11.15 and 3.14.7, including
+the retained loop regression, new invalid-directory cases and valid directory alias.
+The final public head still needs fresh configured receipts and hosted checks.
