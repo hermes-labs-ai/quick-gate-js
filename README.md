@@ -403,7 +403,7 @@ Three Hermes Labs tools share one result contract and stay separate on purpose:
 
 ## Also from Hermes Labs
 
-- [quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python) (PyPI: `pygate-ci`) — the Python counterpart to this repo: a deterministic Python CI quality gate that normalizes Ruff, Pyright, and pytest results into one fail-fast decision, attempts bounded auto-repair, and escalates with machine-readable evidence when it cannot finish safely.
+- [quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python) (PyPI: `pygate-ci`) — the Python counterpart to this repo: a deterministic Python CI quality gate that normalizes Ruff, Pyright, and pytest results into one deterministic decision, attempts bounded auto-repair, and escalates with machine-readable evidence when it cannot finish safely.
 - [lintlang](https://github.com/hermes-labs-ai/lintlang) — static analysis for AI agent configs, tool descriptions, and system prompts; catches vague tool descriptions, missing stop conditions, and schema gaps before they reach runtime.
 - [zer0dex](https://github.com/hermes-labs-ai/zer0dex) — a local dual-layer memory pattern for AI agents pairing a compact markdown index with semantic retrieval from a local vector store.
 - [little-canary](https://github.com/hermes-labs-ai/little-canary) — detects prompt injection by its effect on a sacrificial canary model rather than pattern matching alone, returning block, flag, or pass before the primary model acts.

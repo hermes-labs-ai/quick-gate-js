@@ -4,7 +4,7 @@ Quick Gate is a deterministic JavaScript and TypeScript CI gate with bounded rep
 
 ## Use it for
 
-- running one fail-fast gate over lint, typecheck, build, and Lighthouse results
+- running one deterministic gate over lint, typecheck, build, and Lighthouse results
 - generating machine-readable artifacts for follow-up agents or humans
 - attempting bounded deterministic repair before escalating
 
