@@ -35,7 +35,6 @@
   "keywords": [
     "quality-gate",
     "js-ci",
-    "fail-fast",
     "ci",
     "lint",
     "typecheck",

@@ -1,6 +1,6 @@
 ---
 name: quick-gate-js
-description: Use when you need a deterministic JS/TS CI quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one fail-fast result — with bounded auto-repair and structured escalation evidence for humans or agents — across Next.js, React, Vue, Svelte, or any Node project. A gate-and-escalate wrapper, not a dashboard.
+description: Use when you need a deterministic JS/TS CI quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one deterministic result — with bounded auto-repair and structured escalation evidence for humans or agents — across Next.js, React, Vue, Svelte, or any Node project. A gate-and-escalate wrapper, not a dashboard.
 license: MIT
 compatibility: Requires Node.js 18+; installs via `npm install -g quick-gate` or runs standalone via `npx quick-gate`. Runs the project's own ESLint/TypeScript/build/Lighthouse tooling, no network access beyond what those tools need.
 ---
@@ -9,7 +9,7 @@ compatibility: Requires Node.js 18+; installs via `npm install -g quick-gate` or
 
 quick-gate-js (npm package `quick-gate`) is a deterministic JS/TS CI quality
 gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one
-fail-fast result, with bounded auto-repair and structured escalation
+deterministic result, with bounded auto-repair and structured escalation
 evidence for humans or agents. Works with Next.js, React, Vue, Svelte, or
 any Node project. A gate-and-escalate wrapper, not a dashboard.
 

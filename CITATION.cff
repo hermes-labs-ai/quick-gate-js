@@ -21,4 +21,4 @@ keywords:
   - "lighthouse"
   - "evidence-first"
   - "auto-repair"
-abstract: "quick-gate-js is a deterministic JS/TS quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one fail-fast result, with bounded auto-repair and structured escalation evidence. Published to npm as the package quick-gate."
+abstract: "quick-gate-js is a deterministic JS/TS quality gate that unifies ESLint, TypeScript, build, and Lighthouse checks into one deterministic result, with bounded auto-repair and structured escalation evidence. Published to npm as the package quick-gate."
