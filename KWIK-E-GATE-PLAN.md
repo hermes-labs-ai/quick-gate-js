@@ -993,3 +993,20 @@ remains openly recorded in the admission packet.
 This evidence binds `2a3a79c`. The plan update itself changes tracked input bytes,
 so exact-source receipts must be refreshed after this documentation commit before
 push and PR readiness. The final public head and hosted checks govern integration.
+
+### Claude hook host-interpreter correction
+
+The completed-diff fallback review of the plan-only `cb6f125` head found one
+material plugin reliability path. The Claude manifest invokes unversioned `python3`,
+which can be older than the bundled core's Python 3.11 minimum. A portable
+regression simulated Python 3.9 at the entry point and reproduced a non-JSON exit
+from the runner import before the hook could issue its fail-open response. That test
+failed before correction. The hook now checks the interpreter before importing
+the bundled runtime and returns `{"continue": true}` on older hosts. The real
+system Python 3.9 also returns this response. All 11 plugin tests and Ruff pass.
+The maintainer caught a pre-guard parser barrier in the wrapper's unnecessary
+`from __future__ import annotations`: Python 3.6 cannot parse that future import.
+Removing it keeps the shim parseable on older Python 3 hosts so the version guard
+can answer before any bundled-core import. This is an explicit host compatibility
+boundary, not a change to the Python 3.11+ core requirement. Final committed
+receipts, review and hosted results follow.

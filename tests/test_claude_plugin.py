@@ -166,3 +166,25 @@ def test_plugin_stalled_git_returns_denial_before_its_actual_host_timeout(tmp_pa
 def test_plugin_hook_fails_open_on_an_unknown_event_without_a_pip_install(tmp_path):
     output = _run_hook("bogus-event", {}, tmp_path)
     assert output["continue"] is True
+
+
+def test_plugin_hook_fails_open_before_import_on_unsupported_python(tmp_path):
+    script = PLUGIN_ROOT / "scripts" / "hermes_gate_hook.py"
+    # Simulate an older interpreter before importing the bundled runtime. This
+    # stays runnable on CI hosts that only have a supported Python installed.
+    launcher = (
+        "import importlib.util, sys\n"
+        "spec = importlib.util.spec_from_file_location('plugin_hook_probe', sys.argv[1])\n"
+        "module = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(module)\n"
+        "sys.version_info = (3, 9, 0)\n"
+        "sys.argv = [sys.argv[1], 'session-start']\n"
+        "raise SystemExit(module.main())\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-S", "-c", launcher, str(script)],
+        input=json.dumps({"cwd": str(tmp_path)}), text=True, capture_output=True,
+        cwd=tmp_path, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == {"continue": True}

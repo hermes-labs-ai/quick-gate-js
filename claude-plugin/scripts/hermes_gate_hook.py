@@ -16,8 +16,6 @@ Usage: hermes_gate_hook.py <session-start|stop|pre-tool-use>
 Reads the hook JSON payload on stdin, writes the hook JSON response on
 stdout, per src/hermes_gate/hooks.py's `run_hook` contract.
 """
-from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
@@ -34,6 +32,12 @@ def _prepend_plugin_src() -> None:
 
 
 def main() -> int:
+    # The bundled core requires Python 3.11. An unversioned python3 in Claude's
+    # hook manifest may resolve to an older interpreter; fail open before its
+    # imports can raise an unsupported-runtime error.
+    if sys.version_info < (3, 11):  # noqa: UP036 - manifest uses host python3
+        print(json.dumps({"continue": True}))
+        return 0
     _prepend_plugin_src()
     try:
         from hermes_gate.hooks import read_stdin_payload, run_hook
