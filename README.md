@@ -221,8 +221,8 @@ provider. API/model review being unavailable does not prevent local run/verify.
 
 ## Migration, development and release
 
-- [Architecture and due diligence](KWIK-E-GATE-PLAN.md)
-- [Migration and release instructions](docs/MIGRATION.md)
+- [Configuration and receipt contracts](docs/CONFIGURATION.md)
+- [Standalone Quick Gate JS adapter](docs/QUICK-GATE-JS.md)
 - [Changelog](CHANGELOG.md), [security](SECURITY.md), [contributing](CONTRIBUTING.md)
 
 ```bash
