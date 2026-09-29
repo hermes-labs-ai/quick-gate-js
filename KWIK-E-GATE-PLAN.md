@@ -1047,3 +1047,18 @@ No repository deletion, unpublishing, package deprecation, tag movement, publish
 account change, 0.4.0 publication, or slug rename was part of PR #44. Upstream
 admission still requires the individual maintainers' intake processes and approval;
 the five local profiles are technical proofs, not upstream integrations.
+
+## Repository identity migration proposal (2026-09-29)
+
+The owner has fixed the display name as **Kwik-E-Gate** and the intended repository
+slug as **`kwik-e-gate`**. The consolidated 0.4.0 architecture and existing package
+names remain as decided above. The reviewable, unexecuted URL and release sequence
+is [docs/REBRAND-MIGRATION-PROPOSAL.md](docs/REBRAND-MIGRATION-PROPOSAL.md).
+It requires old Action tag/SHA compatibility and publication-workflow containment
+to be demonstrated before an old-path compatibility repository can replace GitHub's
+redirect. The literal rename, registry publisher changes, and release remain separate
+owner-authorized effects. An independent Sol technical reviewer **approved the gated
+migration proposal** after a HOLD exposed and corrected the need to preserve old-URL
+plugin/skill installs. This is approval of the proposal, not of live compatibility
+or publication. This final section supersedes older all-caps product-title wording in
+historical due-diligence entries, without altering their recorded test outcomes.
