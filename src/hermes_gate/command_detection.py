@@ -13,7 +13,8 @@ class BoundaryAction(StrEnum):
 
 
 _CONTROL = {";", "&", "|", "\n", "(", ")"}
-_WRAPPERS = {"command", "builtin", "env", "sudo", "nohup"}
+_WRAPPERS = {"command", "builtin", "env", "sudo", "nohup", "time"}
+_TIME_VALUE_OPTIONS = {"-f", "--format", "-o", "--output"}
 _NON_EXECUTORS = {"echo", "printf", "rg", "grep", "sed", "awk", "cat", "less", "head", "tail"}
 _SHELLS = {"sh", "bash", "zsh", "dash", "ksh"}
 _SHELL_CONTROL_PREFIXES = {"!", "{", "if", "then", "elif", "else", "while", "until", "do"}
@@ -21,10 +22,11 @@ _SHELL_CONTROL_PREFIXES = {"!", "{", "if", "then", "elif", "else", "while", "unt
 
 @dataclass(frozen=True)
 class BoundaryCommand:
-    """A boundary action plus the ``git -C`` directories selecting its repo."""
+    """A boundary action and literal Git global arguments selecting its context."""
 
     action: BoundaryAction
     git_c_dirs: tuple[str, ...] = ()
+    git_global_args: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -76,10 +78,14 @@ def _segment_command(tokens: list[_ShellToken], *, _depth: int) -> BoundaryComma
         index += 1
     while index < len(tokens) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", tokens[index].value):
         index += 1
-    while index < len(tokens) and tokens[index].value in _WRAPPERS:
+    while index < len(tokens) and tokens[index].value.rsplit("/", 1)[-1] in _WRAPPERS:
+        wrapper = tokens[index].value.rsplit("/", 1)[-1]
         index += 1
         while index < len(tokens) and tokens[index].value.startswith("-"):
-            index += 1
+            option = tokens[index].value
+            index += 2 if wrapper == "time" and option in _TIME_VALUE_OPTIONS else 1
+            if option == "--":
+                break
         while index < len(tokens) and re.fullmatch(
             r"[A-Za-z_][A-Za-z0-9_]*=.*", tokens[index].value
         ):
@@ -94,11 +100,11 @@ def _segment_command(tokens: list[_ShellToken], *, _depth: int) -> BoundaryComma
         script = _shell_command_string(args)
         return detect_boundary_command(script, _depth=_depth + 1) if script is not None else None
     if executable == "git":
-        verb, c_dirs = _git_verb_and_c_dirs([item.value for item in args])
+        verb, c_dirs, global_args = _git_verb_and_context([item.value for item in args])
         if verb == "commit":
-            return BoundaryCommand(BoundaryAction.COMMIT, c_dirs)
+            return BoundaryCommand(BoundaryAction.COMMIT, c_dirs, global_args)
         if verb == "push":
-            return BoundaryCommand(BoundaryAction.PUSH, c_dirs)
+            return BoundaryCommand(BoundaryAction.PUSH, c_dirs, global_args)
     if executable == "gh":
         words = [part.value for part in args if not part.value.startswith("-")]
         if words[:2] == ["pr", "create"]:
@@ -177,7 +183,7 @@ def _lex_shell(command: str) -> list[_ShellToken] | None:
     return tokens
 
 
-def _git_verb_and_c_dirs(args: list[str]) -> tuple[str | None, tuple[str, ...]]:
+def _git_verb_and_context(args: list[str]) -> tuple[str | None, tuple[str, ...], tuple[str, ...]]:
     options_with_value = {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env"}
     index = 0
     c_dirs: list[str] = []
@@ -198,5 +204,5 @@ def _git_verb_and_c_dirs(args: list[str]) -> tuple[str | None, tuple[str, ...]]:
         if item.startswith("-"):
             index += 1
             continue
-        return item, tuple(c_dirs)
-    return None, tuple(c_dirs)
+        return item, tuple(c_dirs), tuple(args[:index])
+    return None, tuple(c_dirs), tuple(args)

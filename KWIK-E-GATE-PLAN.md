@@ -756,3 +756,46 @@ evidence and completed-diff review; public push/PR boundaries additionally requi
 configured full/review receipts for the committed HEAD. HEAD changes invalidate prior
 receipts, so those public-boundary checks run again after commit. No tag, package release, rename or publisher-account change
 is part of this packet.
+
+#### Committed review correction: timing and Git context
+
+The first local consolidation commit is `9dc91c8b67f55dc968f1f843c6fcf472fee7df27`.
+Its fresh full receipt passed (393 Python / 95 JS tests; 103.647 seconds), but the
+committed-diff review returned two material findings through the existing
+`hermes-pr-review` fallback: `time git commit` escaped detection, and explicit
+`--git-dir`/`--work-tree` selection from a non-Git cwd lost the target repository.
+That review is FAIL, not CodeRabbit acceptance. It blocks the public boundary.
+The before trace is `/tmp/kwik-hook-context-before.json`; no actual commit was
+executed in that reproduction. New tests failed against the old implementation.
+
+The correction recognizes timing wrappers, preserves literal Git globals and resolves
+them through the existing bounded native Git helper. It compares both canonical
+toplevel and absolute Git directory against independent normal worktree discovery;
+a receipt for different metadata or a subdirectory worktree cannot license the
+selected command. Linked worktrees, `.git` files, harmless assignments and the
+never-adopted exemption survive. Inherited repository/index overrides and explicit
+namespaces are denied. Native Git rejects joined `-Cpath`/`-ckey=value` on this host;
+preserving their literal argv means denial, not invented support.
+
+The maintainer's historical constraint is that a receipt for the caller's checkout
+cannot license an action targeting another checkout. This fix preserves the parser's
+bounded role; preceding `cd`, command-local repository/index assignments, arbitrary
+expansion and multiple target repositories are outside its supported context.
+Integration documentation and plugin wording now name that scope. The focused parser/
+hook tests pass (65 cases). Fresh complete-diff review and committed-HEAD receipts
+are still required before push; the earlier successful full run does not cover this
+correction.
+
+The maintainer then identified the supported Python 3.11/3.12 `Path.resolve()`
+symlink-loop `RuntimeError`, and the actual plugin/Codex five-second PreToolUse
+transport versus ten seconds per Git query. Path/boundary errors now return denial.
+All PreToolUse metadata queries share a three-second context-local deadline; ordinary
+CLI queries keep their ten-second limit. The existing installed hook definitions and
+their ownership/removal recognition stay compatible. Plugin entry-point tests exercise
+both one stalled Git process and cumulative slow queries under its actual host timeout,
+without a pip install. Both manifest descriptions remain synchronized. These are
+historical consumer constraints, not reasons to broaden the shell interpreter.
+The maintainer accepted this bounded local correction after those fixes, with no
+remaining material finding. Its read-only acceptance does not substitute for the
+configured committed-diff review or public-boundary receipts. The uncommitted
+CodeRabbit attempt was rate-limited and recorded REVIEW_UNAVAILABLE.

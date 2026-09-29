@@ -28,6 +28,11 @@ from hermes_gate.command_detection import (
         ("bash -lc 'git push origin main'", BoundaryAction.PUSH),
         ("zsh -c 'gh pr create --fill'", BoundaryAction.PR_CREATE),
         ("env CI=1 sh -c 'gh pr ready 42'", BoundaryAction.PR_READY),
+        ("time git commit -m done", BoundaryAction.COMMIT),
+        ("time -p git push origin main", BoundaryAction.PUSH),
+        ("/usr/bin/time -l git commit -m done", BoundaryAction.COMMIT),
+        ("/usr/bin/time -f '%e git push' -o timing.log git commit -m done", BoundaryAction.COMMIT),
+        ("time --format='%e' --output=timing.log sh -c 'gh pr ready 42'", BoundaryAction.PR_READY),
     ],
 )
 def test_detects_real_boundary_commands(command: str, expected: BoundaryAction) -> None:
@@ -45,6 +50,8 @@ def test_detects_real_boundary_commands(command: str, expected: BoundaryAction) 
         "gh pr list",
         "python -c \"print('git commit -m nope')\"",
         "# git push origin main",
+        "time printf '%s' 'git commit -m nope'",
+        "time -f 'git push' echo done",
     ],
 )
 def test_ignores_quoted_prose_logs_and_non_boundary_git(command: str) -> None:
@@ -64,6 +71,20 @@ def test_captures_ordered_git_c_directories_inside_a_shell_wrapper() -> None:
     assert detected is not None
     assert detected.action is BoundaryAction.COMMIT
     assert detected.git_c_dirs == ("first", "second")
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        ["--git-dir", "metadata", "--work-tree", "source"],
+        ["-Cfirst", "--git-dir=metadata", "-C", "second", "--work-tree=source"],
+        ["-c", "core.worktree=source", "-ccore.bare=false"],
+    ],
+)
+def test_preserves_literal_git_global_context(options: list[str]) -> None:
+    detected = detect_boundary_command(shlex.join(["git", *options, "commit", "-m", "done"]))
+    assert detected is not None
+    assert detected.git_global_args == tuple(options)
 
 
 def test_shell_wrapper_does_not_treat_quoted_prose_as_a_boundary() -> None:

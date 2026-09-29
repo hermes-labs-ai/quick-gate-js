@@ -10,8 +10,17 @@ from typing import Any
 from .classification import is_code_path
 from .command_detection import detect_boundary_command
 from .engine import boundary, fast
-from .gitstate import ContentReadError, repo_root, session_changed_paths, snapshot
+from .gitstate import (
+    ContentReadError,
+    git,
+    git_query_budget,
+    repo_root,
+    session_changed_paths,
+    snapshot,
+)
 from .status import Status
+
+_REPOSITORY_ENV = {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_NAMESPACE"}
 
 
 def run_hook(event: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -99,27 +108,61 @@ def pre_tool_use(payload: dict[str, Any]) -> dict[str, Any]:
     detected = detect_boundary_command(command)
     if detected is None:
         return {}
-    root = _boundary_root(payload.get("cwd"), detected.git_c_dirs)
-    if root is None:
-        if detected.git_c_dirs:
-            return _boundary_deny("could not determine the repository selected by git -C")
-        return {}
-    outcome = boundary(root, detected.action.value)
+    if any(name in os.environ for name in _REPOSITORY_ENV) or any(
+        arg == "--namespace" or arg.startswith("--namespace=")
+        for arg in detected.git_global_args
+    ):
+        return _boundary_deny(
+            "repository/index/namespace overrides require an explicit native Gate boundary"
+        )
+    try:
+        # Both native hosts allow five seconds. All metadata queries, including
+        # receipt validation, share this deadline so a stall returns denial.
+        with git_query_budget(3.0):
+            root = _boundary_root(payload.get("cwd"), detected.git_global_args)
+            if root is None:
+                if detected.git_global_args:
+                    return _boundary_deny(
+                        "could not determine a matching repository context selected by git -C or global options"
+                    )
+                return {}
+            outcome = boundary(root, detected.action.value)
+    except (OSError, ValueError, RuntimeError):
+        return _boundary_deny("could not safely resolve or validate the Git repository context")
     if outcome["status"] == Status.PASS:
         return {}
     reason = str(outcome.get("reason") or "required receipt is missing")
     return _boundary_deny(reason)
 
 
-def _boundary_root(cwd: str | None, c_dirs: tuple[str, ...]) -> Path | None:
-    """Resolve Git's ordered ``-C`` directories before locating its repository."""
-    if not c_dirs:
+def _boundary_root(cwd: str | None, global_args: tuple[str, ...]) -> Path | None:
+    """Let Git resolve literal options, then require a normal registered worktree.
+
+    The receipt engine reads the worktree's own index and refs. Accepting an
+    arbitrary pairing of another Git directory and this worktree would validate
+    different state from the commit/push that is about to execute.
+    """
+    if not global_args:
         return repo_root(cwd)
-    selected = Path(cwd or os.getcwd()).expanduser()
-    for directory in c_dirs:
-        candidate = Path(directory).expanduser()
-        selected = candidate if candidate.is_absolute() else selected / candidate
-    return repo_root(selected)
+    start = Path(cwd or os.getcwd()).expanduser().resolve()
+    selected_root = _git_context_path(start, global_args, "--show-toplevel")
+    selected_git_dir = _git_context_path(start, global_args, "--absolute-git-dir")
+    if selected_root is None or selected_git_dir is None:
+        return None
+    normal_root = _git_context_path(selected_root, (), "--show-toplevel")
+    normal_git_dir = _git_context_path(selected_root, (), "--absolute-git-dir")
+    if selected_root != normal_root or selected_git_dir != normal_git_dir:
+        return None
+    return selected_root
+
+
+def _git_context_path(root: Path, global_args: tuple[str, ...], query: str) -> Path | None:
+    # Override any command-local monitor configuration too; metadata lookup must
+    # not invoke a daemon or a model. The shared helper bounds every Git query.
+    proc = git(root, *global_args, "-c", "core.fsmonitor=false", "rev-parse", query, check=False)
+    if proc.returncode or not proc.stdout:
+        return None
+    return Path(proc.stdout.removesuffix(b"\n").decode("utf-8", "surrogateescape")).resolve()
 
 
 def _boundary_deny(reason: str) -> dict[str, Any]:

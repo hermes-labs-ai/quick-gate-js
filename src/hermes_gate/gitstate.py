@@ -5,10 +5,14 @@ import json
 import os
 import stat
 import subprocess
-from collections.abc import Iterable
+import time
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 GIT_TIMEOUT_SECONDS = 10.0
+_GIT_DEADLINE: ContextVar[float | None] = ContextVar("hermes_gate_git_deadline", default=None)
 
 
 class GitError(RuntimeError):
@@ -23,18 +27,36 @@ class ContentReadError(RuntimeError):
     """A path advertised bytes that could not be read faithfully."""
 
 
+@contextmanager
+def git_query_budget(seconds: float) -> Iterator[None]:
+    """Share a metadata-query deadline within a bounded hook transport."""
+    deadline = time.monotonic() + seconds
+    inherited = _GIT_DEADLINE.get()
+    token = _GIT_DEADLINE.set(min(deadline, inherited) if inherited is not None else deadline)
+    try:
+        yield
+    finally:
+        _GIT_DEADLINE.reset(token)
+
+
 def git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
     # Metadata queries need no optional monitor. A stalled daemon must not hang
     # discovery before the workflow can issue its failure receipt.
     argv = ["git", "-C", str(root), "-c", "core.fsmonitor=false", *args]
+    timeout = GIT_TIMEOUT_SECONDS
+    deadline = _GIT_DEADLINE.get()
+    if deadline is not None:
+        timeout = min(timeout, deadline - time.monotonic())
+        if timeout <= 0:
+            raise GitError("git metadata query budget exhausted")
     try:
         proc = subprocess.run(
-            argv, capture_output=True, check=False, timeout=GIT_TIMEOUT_SECONDS,
+            argv, capture_output=True, check=False, timeout=timeout,
         )
     except subprocess.TimeoutExpired as exc:
         # Timeout is an infrastructure failure even for expected nonzero queries
         # such as an unborn HEAD or missing upstream. It cannot mean "no changes".
-        raise GitError(f"git metadata query timed out after {GIT_TIMEOUT_SECONDS:g}s") from exc
+        raise GitError(f"git metadata query timed out after {timeout:g}s") from exc
     if check and proc.returncode:
         raise GitError(proc.stderr.decode("utf-8", "replace").strip() or "git command failed")
     return proc

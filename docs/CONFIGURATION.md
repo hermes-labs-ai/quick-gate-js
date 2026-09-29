@@ -118,6 +118,28 @@ configuration to its snapshot and supports Unicode/space/newline file names.
 or local models according to its installed provider. Existing strict profiles and
 owner instructions can independently require review; do not silently weaken them.
 
+### Hook command scope
+
+PreToolUse recognizes literal `git commit`, `git push`, `gh pr create` and `gh pr ready`
+commands, including bounded POSIX `sh -c` wrappers and `time`/`/usr/bin/time` wrappers.
+For Git it preserves global arguments and uses Git itself to resolve ordered `-C`,
+`--git-dir` and `--work-tree` selection. Both the selected toplevel and Git directory
+must match the registered worktree that the receipt engine checks. Linked worktrees
+and `.git` files are supported; mismatched metadata, bare repositories and unresolved
+explicit selection are denied. Matching repositories that never adopted Gate remain
+exempt. Inherited repository/index environment overrides and explicit namespaces are
+denied because path identity alone cannot prove their receipts apply.
+
+This is a bounded command parser, not a Bash sandbox. It does not interpret preceding
+`cd` commands, command-local repository/index-changing `GIT_*` assignments, arbitrary
+expansion or multiple boundaries targeting different repositories. Use the native
+Gate CLI with the intended checkout as its working directory and the registered
+worktree/index; run each boundary separately. Harmless assignments such as `GIT_EDITOR`
+remain supported. Hooks do not establish authorization for Git or GitHub actions.
+PreToolUse metadata queries share a three-second deadline inside the existing
+five-second host transport. A query failure, timeout or path-resolution loop returns
+structured denial; ordinary CLI queries retain their ten-second limit.
+
 ## Receipt contract
 
 `hermes-gate/receipt-v1` stays compatible. Additive `binding` contains

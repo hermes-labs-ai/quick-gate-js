@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tomllib
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = ROOT / "claude-plugin"
@@ -131,6 +134,33 @@ def test_plugin_pre_tool_use_hook_ignores_non_bash_tools_without_a_pip_install(t
         tmp_path,
     )
     assert output == {}
+
+
+@pytest.mark.parametrize("delay", [30.0, 0.9])
+def test_plugin_stalled_git_returns_denial_before_its_actual_host_timeout(tmp_path, monkeypatch, delay):
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_git = fake_bin / "git"
+    fake_git.write_text(
+        f"#!{sys.executable}\nimport sys, time\ntime.sleep({delay})\n"
+        f"print({str(tmp_path)!r} + ('/.git' if '--absolute-git-dir' in sys.argv else ''))\n"
+    )
+    fake_git.chmod(0o755)
+    monkeypatch.setenv("PATH", str(fake_bin) + os.pathsep + os.environ["PATH"])
+    definitions = json.loads((PLUGIN_ROOT / "hooks/hooks.json").read_text())
+    hook = definitions["hooks"]["PreToolUse"][0]["hooks"][0]
+    payload = {
+        "cwd": str(tmp_path), "tool_name": "Bash",
+        "tool_input": {"command": shlex.join(["git", "-C", str(tmp_path), "commit", "-m", "x"])},
+    }
+    proc = subprocess.run(
+        [sys.executable, "-S", str(PLUGIN_ROOT / "scripts/hermes_gate_hook.py"), "pre-tool-use"],
+        input=json.dumps(payload), text=True, capture_output=True,
+        cwd=tmp_path, timeout=hook["timeout"], check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    output = json.loads(proc.stdout)
+    assert output["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
 def test_plugin_hook_fails_open_on_an_unknown_event_without_a_pip_install(tmp_path):
