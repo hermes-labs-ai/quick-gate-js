@@ -121,6 +121,17 @@ and documentation changes. The [admission notes](CI-ADMISSION.md) distinguish fi
 verified scoped PASS proofs and a sixth reproduced native E2E FAIL. None implies
 upstream approval or hosted CI adoption.
 
+The subsequent committed review found timing-wrapper and explicit Git-target hook
+bypasses. Their correction is commit `9d2b6d7a0bb82905496613fb0ecb224fa1108ea0`:
+420 Python / 95 JS tests passed (full 108.606 seconds), fast passed in 0.838 seconds,
+and CodeRabbit returned PASS with no material findings in 250.002 seconds. It also
+covers the maintainer's symlink-loop and actual five-second hook-transport findings.
+See [hook command scope](CONFIGURATION.md#hook-command-scope) for supported contexts.
+The corrected wheel/sdist identity guard passed; the independent npm archive remains
+27 files and ships no Python runtime. These results cover that exact local commit.
+Later commits require fresh boundary receipts; public checks and source readback belong
+to the consolidation PR. No 0.4.0 registry publication is claimed.
+
 ## Publication sequence
 
 1. Review/integrate this combined candidate using repository checks and exact receipts.

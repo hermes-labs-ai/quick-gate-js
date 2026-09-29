@@ -799,3 +799,35 @@ The maintainer accepted this bounded local correction after those fixes, with no
 remaining material finding. Its read-only acceptance does not substitute for the
 configured committed-diff review or public-boundary receipts. The uncommitted
 CodeRabbit attempt was rate-limited and recorded REVIEW_UNAVAILABLE.
+
+### Final implementation validation and integration route
+
+Correction commit `9d2b6d7a0bb82905496613fb0ecb224fa1108ea0` passed fresh fast
+(0.838 seconds), full (108.606 seconds; 420 Python / 95 JS tests), and the configured
+CodeRabbit committed-diff review (250.002 seconds; no material findings). Its correction
+commit boundary passed with matching fast evidence and completed maintainer review.
+The rebuilt 0.4.0 core wheel/sdist identity guard passed. The independent npm archive
+is still 27 files and has unchanged integrity, confirming that Python core changes do
+not drag a runtime into the JS package. The failed no-isolation build attempt lacked
+the declared setuptools build backend; the normal isolated build succeeded without
+adding a runtime dependency or changing the test environment.
+
+The next concrete consumer is the consolidation PR in the existing
+`hermes-labs-ai/quick-gate-js` repository. The final documentation commit requires fresh
+committed-HEAD fast/full/review and public-boundary validation before its ordinary
+branch push. Its PR records the immutable public source pin, terminal validation and
+hosted check results; that live PR is authoritative for integration status. No source
+change after those receipts is accepted implicitly. This implements a reviewable
+0.4.0 candidate, not a tag, registry upload or repository rename.
+
+The five-project admission packet is ready at the documented native scopes: MCP Python,
+Pydantic AI, Hermes Agent, pipx and PyPA packaging. Each includes a PASS, receipt
+verification, actual-source staleness/failure and restoration probes, plus contribution
+intake constraints. MCP TypeScript remains a sixth honest FAIL. These are local
+integration proofs, not upstream approval or evidence that an unrun matrix passed.
+
+Remaining owner decisions concern external cutover: approve repository-bound publisher
+rebinding/release when source acceptance is complete; select the old Actions compatibility
+cutover before a literal lowercase `kwik-e-gate` rename; and supply human accountability/
+issue alignment where an upstream project's intake requires it. Package/API names and
+historical tags stay compatible. No additional architecture decision is needed.
