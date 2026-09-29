@@ -1,6 +1,12 @@
 ![KWIK-E-GATE — your local convenience code review. Don’t forget the receipt.](docs/assets/kwik-e-gate-header.jpg)
 
-# kwik-e-gate
+# Quick Gate JS
+
+> **Existing Quick Gate users:** This repository stays at its original URL.
+> Published `quick-gate` 0.3.2, historical tags and SHA pins, the root and nested
+> Actions, plugin installs, issues, and releases remain here. The active
+> [Kwik-e-gate product source](https://github.com/hermes-labs-ai/kwik-e-gate)
+> is a new repository. Its 0.4.0 packages are not yet published.
 
 **Fast local checks for coding agents. PASS / FAIL. Don't forget the receipt.**
 
@@ -162,7 +168,7 @@ pin its reviewed commit. The existing root Action keeps the standalone JS interf
   with:
     fetch-depth: 0
     persist-credentials: false
-- uses: hermes-labs-ai/quick-gate-js/.github/actions/kwik-e-gate@REVIEWED_COMMIT
+- uses: hermes-labs-ai/kwik-e-gate/.github/actions/kwik-e-gate@5d6b486791a084bc312055e350983881dacbf512
   id: gate
   with:
     mode: full
@@ -173,9 +179,8 @@ pin its reviewed commit. The existing root Action keeps the standalone JS interf
     path: ${{ steps.gate.outputs.receipt-path }}
 ```
 
-`REVIEWED_COMMIT` is a replacement marker: this candidate is not yet published. The
-public repository slug remains `quick-gate-js` until the compatible `kwik-e-gate`
-rename is verified. The core Action exposes `status` and `receipt-path`, including
+The pinned commit is the accepted source import in the new repository; the 0.4.0
+packages remain unpublished. The core Action exposes `status` and `receipt-path`, including
 failing runs. For an ambiguous detached/merge checkout, supply its `base` input.
 Old JS Action users retain their original inputs/outputs; see the
 [standalone JS guide](docs/QUICK-GATE-JS.md).
