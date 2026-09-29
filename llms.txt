@@ -24,6 +24,10 @@ Key success condition:
 - the same gate outputs produce the same normalized artifacts and escalation decisions
 
 
+Related Hermes Labs tools:
+- [hermes-gate](https://github.com/hermes-labs-ai/hermes-gate) (PyPI `hermes-gate`): receipt-bound completion rail that can optionally wrap this tool through an opt-in adapter.
+- [quick-gate-python](https://github.com/hermes-labs-ai/quick-gate-python): PyGate (PyPI `pygate-ci`), the sibling primitive for the other language. All three share one byte-identical `gate-result/v1` schema; see README "Relationship to PyGate and Quick Gate".
+
 ## About Hermes Labs
 
 Hermes Labs owns and maintains quick-gate-js.
