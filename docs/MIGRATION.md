@@ -35,10 +35,25 @@ instead of being silently suppressed. Explicit recognized nonmaterial categories
 the typed JSONL contract keep their existing policy. Rerun receipts after upgrading:
 the normalizer's bytes are part of the executing-core binding, even for checks that
 never invoke review.
+Forced `init` and `uninstall-repo` now park if an integration file or backup would
+resolve outside the checkout or its Git metadata. Existing in-checkout symlinks to
+regular files remain supported. If an old integration intentionally points outside,
+move it inside or resolve it manually before retrying; the tool will not rewrite its
+external target. Linked worktrees still keep install state in their Git directory.
+Uninstall also parks when a recorded owner backup is missing or changed, or a backup
+appears without a matching manifest entry. Restore those exact owner bytes or resolve
+the integration manually before retrying; generated files remain in place on a park.
+A truncated v1 manifest cannot remove only some generated files and then erase its
+enrollment witness.
 
-Do not run `init --force` merely to upgrade. Existing profiles/CI remain valid; adopt
-new generated CI, portable JS command detection and policy keys through a reviewed
-diff. Commit only intended integration updates. Rollback: retain the previous package
+Do not run `init --force` merely to upgrade: it parks when a current or legacy install
+manifest marks the repository as enrolled, preserving the original owner backup.
+Uninstall first only while installed files still match; otherwise resolve owner edits
+manually. A successful uninstall now removes its recorded backup copies. Leftover
+backup copies from an older version or interrupted rollback are reused only when
+the corresponding owner file has identical bytes; mismatches and orphaned backups
+park until resolved. Existing profiles/CI remain valid; adopt new generated CI,
+portable JS command detection and policy keys through a reviewed diff. Commit only intended integration updates. Rollback: retain the previous package
 pin and profile/CI files; old receipts must still be regenerated, never relabeled.
 
 `run` now defaults to explainable auto selection. Use `--mode fast` for the former

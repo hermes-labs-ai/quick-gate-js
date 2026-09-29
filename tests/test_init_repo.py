@@ -230,3 +230,401 @@ def test_init_preserves_existing_symlink_identity_when_forced(tmp_path: Path) ->
     assert profile.is_symlink()
     assert uninstall(root)["status"] == "PASS"
     assert profile.read_bytes() == b"owner profile\n"
+
+
+@pytest.mark.parametrize("relative", [
+    ".hermes/gate.toml",
+    ".hermes/hermes_gate_runner.py",
+    ".github/workflows/hermes-quality.yml",
+])
+def test_init_force_refuses_external_integration_symlink(tmp_path: Path, relative: str) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    external = tmp_path / "outside"
+    external.write_bytes(b"owner bytes\n")
+    target.symlink_to(external)
+
+    outcome = initialize(root, force=True)
+
+    assert outcome["status"] == "PARKED"
+    assert target.is_symlink()
+    assert external.read_bytes() == b"owner bytes\n"
+    assert not (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+@pytest.mark.parametrize("relative", [
+    ".hermes/gate.toml",
+    ".hermes/hermes_gate_runner.py",
+    ".github/workflows/hermes-quality.yml",
+])
+def test_uninstall_refuses_external_integration_symlink(tmp_path: Path, relative: str) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    target = root / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"owner bytes\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    generated = target.read_bytes()
+    external = tmp_path / "outside"
+    external.write_bytes(generated)
+    target.unlink()
+    target.symlink_to(external)
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "PARKED"
+    assert target.is_symlink()
+    assert external.read_bytes() == generated
+    assert (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_uninstall_refuses_external_integration_parent(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    outside = tmp_path / "outside-hermes"
+    profile.parent.rename(outside)
+    profile.parent.symlink_to(outside, target_is_directory=True)
+    generated = (outside / "gate.toml").read_bytes()
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "PARKED"
+    assert (outside / "gate.toml").read_bytes() == generated
+    assert (outside / "hermes_gate_runner.py").exists()
+    assert (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_init_force_refuses_external_backup_destination(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    backup.parent.mkdir(parents=True)
+    external = tmp_path / "outside-backup"
+    external.write_bytes(b"outside sentinel\n")
+    backup.symlink_to(external)
+
+    outcome = initialize(root, force=True)
+
+    assert outcome["status"] == "PARKED"
+    assert external.read_bytes() == b"outside sentinel\n"
+    assert profile.read_bytes() == b"owner profile\n"
+    assert not (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_uninstall_refuses_symlinked_backup_source(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    generated = profile.read_bytes()
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    external = tmp_path / "outside-backup"
+    external.write_bytes(backup.read_bytes())
+    backup.unlink()
+    backup.symlink_to(external)
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "PARKED"
+    assert profile.read_bytes() == generated
+    assert (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_init_refuses_external_integration_parent(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    outside = tmp_path / "outside-hermes"
+    outside.mkdir()
+    (root / ".hermes").symlink_to(outside, target_is_directory=True)
+
+    outcome = initialize(root)
+
+    assert outcome["status"] == "PARKED"
+    assert not (outside / "gate.toml").exists()
+    assert not (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_init_refuses_metadata_state_alias_outside_git_dir(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    state = git_dir(root) / "hermes-gate"
+    outside = tmp_path / "outside-state"
+    outside.mkdir()
+    state.symlink_to(outside, target_is_directory=True)
+
+    outcome = initialize(root)
+
+    assert outcome["status"] == "PARKED"
+    assert not (outside / "baseline.json").exists()
+    assert not (outside / "install.json").exists()
+    assert not (root / ".hermes" / "gate.toml").exists()
+
+
+def test_verify_and_uninstall_refuse_aliased_metadata_state(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    assert initialize(root)["status"] == "PASS"
+    state = git_dir(root) / "hermes-gate"
+    outside = tmp_path / "outside-state"
+    state.rename(outside)
+    state.symlink_to(outside, target_is_directory=True)
+
+    valid, _reason = verify_runner(root)
+    outcome = uninstall(root)
+
+    assert not valid
+    assert outcome["status"] == "PARKED"
+    assert (outside / "install.json").exists()
+    assert (root / ".hermes" / "gate.toml").exists()
+
+
+def test_init_refuses_aliased_baseline_state_file(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    state = git_dir(root) / "hermes-gate"
+    state.mkdir()
+    external = tmp_path / "outside-baseline"
+    external.write_bytes(b"owner baseline\n")
+    (state / "baseline.json").symlink_to(external)
+
+    outcome = initialize(root)
+
+    assert outcome["status"] == "PARKED"
+    assert external.read_bytes() == b"owner baseline\n"
+    assert not (state / "install.json").exists()
+    assert not (root / ".hermes" / "gate.toml").exists()
+
+
+def test_init_refuses_aliased_backup_directory_without_existing_targets(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    state = git_dir(root) / "hermes-gate"
+    state.mkdir()
+    outside = tmp_path / "outside-backups"
+    outside.mkdir()
+    (state / "install-backup").symlink_to(outside, target_is_directory=True)
+
+    outcome = initialize(root)
+
+    assert outcome["status"] == "PARKED"
+    assert not (state / "install.json").exists()
+    assert not (root / ".hermes" / "gate.toml").exists()
+
+
+@pytest.mark.parametrize("tamper", ["missing", "changed"])
+def test_uninstall_refuses_missing_or_altered_recorded_backup(
+    tmp_path: Path, tamper: str,
+) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    generated = profile.read_bytes()
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    if tamper == "missing":
+        backup.unlink()
+    else:
+        backup.write_bytes(b"altered backup\n")
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "PARKED"
+    assert profile.read_bytes() == generated
+    assert (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_uninstall_refuses_unrecorded_backup(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    assert initialize(root)["status"] == "PASS"
+    profile = root / ".hermes" / "gate.toml"
+    generated = profile.read_bytes()
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    backup.write_bytes(b"unrecorded backup\n")
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "PARKED"
+    assert profile.read_bytes() == generated
+    assert (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+
+def test_uninstall_rejects_manifest_traversal_before_removing_files(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    assert initialize(root)["status"] == "PASS"
+    external = tmp_path / "outside"
+    external.write_bytes(b"outside sentinel\n")
+    manifest_path = git_dir(root) / "hermes-gate" / "install.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["files"] = {"../outside": hashlib.sha256(external.read_bytes()).hexdigest()}
+    manifest_path.write_text(json.dumps(manifest))
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "NOT_CONFIGURED"
+    assert external.read_bytes() == b"outside sentinel\n"
+    assert manifest_path.exists()
+
+
+def test_uninstall_rejects_truncated_v1_manifest_without_partial_removal(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    assert initialize(root)["status"] == "PASS"
+    manifest_path = git_dir(root) / "hermes-gate" / "install.json"
+    manifest = json.loads(manifest_path.read_text())
+    del manifest["files"][".hermes/hermes_gate_runner.py"]
+    manifest_path.write_text(json.dumps(manifest))
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "NOT_CONFIGURED"
+    assert manifest_path.exists()
+    assert (root / ".hermes" / "gate.toml").exists()
+    assert (root / ".hermes" / "hermes_gate_runner.py").exists()
+    assert (root / ".github" / "workflows" / "hermes-quality.yml").exists()
+
+
+def test_repeat_force_init_preserves_original_backup_and_witness(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    state = git_dir(root) / "hermes-gate"
+    backup = state / "install-backup" / ".hermes" / "gate.toml"
+    original_manifest = (state / "install.json").read_bytes()
+    generated = profile.read_bytes()
+
+    repeated = initialize(root, force=True)
+
+    assert repeated["status"] == "PARKED"
+    assert backup.read_bytes() == b"owner profile\n"
+    assert (state / "install.json").read_bytes() == original_manifest
+    assert profile.read_bytes() == generated
+    assert uninstall(root)["status"] == "PASS"
+    assert profile.read_bytes() == b"owner profile\n"
+
+
+def test_uninstall_then_fresh_init_remains_reversible(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    assert uninstall(root)["status"] == "PASS"
+    assert profile.read_bytes() == b"owner profile\n"
+    assert not backup.exists()
+
+    profile.unlink()
+    assert initialize(root)["status"] == "PASS"
+    assert uninstall(root)["status"] == "PASS"
+    assert not profile.exists()
+
+
+def test_init_parks_on_stale_backup_without_an_existing_target(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    backup.parent.mkdir(parents=True)
+    backup.write_bytes(b"owner bytes from an older installation\n")
+
+    outcome = initialize(root)
+
+    assert outcome["status"] == "PARKED"
+    assert backup.read_bytes() == b"owner bytes from an older installation\n"
+    assert not (git_dir(root) / "hermes-gate" / "install.json").exists()
+    assert not (root / ".hermes" / "gate.toml").exists()
+
+
+def test_force_init_reuses_only_a_matching_owner_backup(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    profile = root / ".hermes" / "gate.toml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"owner profile\n")
+    backup = git_dir(root) / "hermes-gate" / "install-backup" / ".hermes" / "gate.toml"
+    backup.parent.mkdir(parents=True)
+    backup.write_bytes(b"different older owner\n")
+
+    assert initialize(root, force=True)["status"] == "PARKED"
+    assert profile.read_bytes() == b"owner profile\n"
+    assert backup.read_bytes() == b"different older owner\n"
+    assert not (git_dir(root) / "hermes-gate" / "install.json").exists()
+
+    backup.write_bytes(b"owner profile\n")
+    assert initialize(root, force=True)["status"] == "PASS"
+    assert uninstall(root)["status"] == "PASS"
+    assert profile.read_bytes() == b"owner profile\n"
+    assert not backup.exists()
+
+
+def test_uninstall_refuses_external_legacy_manifest_parent(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    assert initialize(root)["status"] == "PASS"
+    current = git_dir(root) / "hermes-gate" / "install.json"
+    outside = tmp_path / "outside-hermes"
+    (root / ".hermes").rename(outside)
+    (outside / "install.json").write_bytes(current.read_bytes())
+    current.unlink()
+    (root / ".hermes").symlink_to(outside, target_is_directory=True)
+
+    outcome = uninstall(root)
+
+    assert outcome["status"] == "PARKED"
+    assert (outside / "install.json").exists()
+    assert (outside / "hermes_gate_runner.py").exists()
+
+
+def test_init_and_uninstall_linked_worktree_keep_git_metadata_placement(tmp_path: Path) -> None:
+    root = tmp_path / "repo"
+    root.mkdir()
+    git(root, "init", "-q")
+    (root / "README.md").write_text("fixture\n")
+    git(root, "add", "README.md")
+    git(root, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+        "-c", "core.hooksPath=/dev/null", "commit", "-qm", "fixture")
+    linked = tmp_path / "linked"
+    git(root, "worktree", "add", "--detach", str(linked))
+    assert (linked / ".git").is_file()
+
+    assert initialize(linked)["status"] == "PASS"
+    assert (git_dir(linked) / "hermes-gate" / "install.json").exists()
+    assert uninstall(linked)["status"] == "PASS"

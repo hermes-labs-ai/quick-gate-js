@@ -20,6 +20,51 @@ ACTION_VERSIONS = {
     "setup-node": "820762786026740c76f36085b0efc47a31fe5020",
     "upload-artifact": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
 }
+INTEGRATION_FILES = frozenset({
+    ".hermes/gate.toml",
+    ".hermes/hermes_gate_runner.py",
+    ".github/workflows/hermes-quality.yml",
+})
+
+
+def _contained_file(base: Path, path: Path) -> bool:
+    """Allow ordinary files and in-base aliases, including aliases in parents."""
+    try:
+        relative = path.relative_to(base)
+        for depth in range(1, len(relative.parts)):
+            parent = base.joinpath(*relative.parts[:depth])
+            if parent.is_symlink() and not parent.is_dir():
+                return False
+            if parent.exists() and not parent.is_dir():
+                return False
+        if path.is_symlink() and not path.is_file():
+            return False
+        if path.exists() and not path.is_file():
+            return False
+        return path.resolve(strict=False).is_relative_to(base.resolve(strict=True))
+    except (OSError, RuntimeError, ValueError):
+        return False
+
+
+def _metadata_state_safe(root: Path) -> bool:
+    metadata = git_dir(root)
+    state = metadata / "hermes-gate"
+    manifest = state / "install.json"
+    baseline = state / "baseline.json"
+    backups = state / "install-backup"
+    return (
+        not state.is_symlink()
+        and not manifest.is_symlink()
+        and not baseline.is_symlink()
+        and not backups.is_symlink()
+        and _contained_file(metadata, manifest)
+        and _contained_file(metadata, baseline)
+        and all(
+            not (backups / relative).is_symlink()
+            and _contained_file(metadata, backups / relative)
+            for relative in INTEGRATION_FILES
+        )
+    )
 
 
 def initialize(root: Path, *, force: bool = False, adapter: str = "native") -> dict[str, Any]:
@@ -37,6 +82,13 @@ def initialize(root: Path, *, force: bool = False, adapter: str = "native") -> d
             "reason": "refusing to overwrite dangling integration symlink(s); preserve them manually",
             "existing": [str(path.relative_to(root)) for path in dangling],
         }
+    unsafe = [path for path in targets if not _contained_file(root, path)]
+    if unsafe:
+        return {
+            "status": "PARKED",
+            "reason": "refusing integration path outside this repository or without a regular file",
+            "existing": [str(path.relative_to(root)) for path in unsafe],
+        }
     existing = [path for path in targets if path.exists()]
     if existing and not force:
         return {
@@ -48,7 +100,44 @@ def initialize(root: Path, *, force: bool = False, adapter: str = "native") -> d
         preflight_snapshot = snapshot(root)
     except ContentReadError as exc:
         return {"status": "PARKED", "reason": f"cannot read complete repository bytes: {exc}"}
+    if not _metadata_state_safe(root):
+        return {"status": "PARKED", "reason": "Gate state leaves the Git directory"}
+    current_manifest = _install_manifest_path(root)
+    legacy_manifest = root / ".hermes" / "install.json"
+    if current_manifest.exists() or legacy_manifest.exists() or legacy_manifest.is_symlink():
+        return {
+            "status": "PARKED",
+            "reason": "Gate is already installed; preserve its original backup and manifest",
+        }
     backup_root = git_dir(root) / "hermes-gate" / "install-backup"
+    metadata = git_dir(root)
+    unsafe_backups = [
+        backup_root / relative for relative in INTEGRATION_FILES
+        if (backup_root / relative).is_symlink()
+        or not _contained_file(metadata, backup_root / relative)
+    ]
+    if unsafe_backups:
+        return {
+            "status": "PARKED",
+            "reason": "refusing backup path outside Git metadata or through a backup symlink",
+            "existing": [str(path.relative_to(backup_root)) for path in unsafe_backups],
+        }
+    # An older install or interrupted rollback may have left backups behind.
+    # Reuse only a byte-identical copy of a file still present in the checkout;
+    # otherwise its original ownership cannot be inferred safely.
+    for relative in INTEGRATION_FILES:
+        backup = backup_root / relative
+        if not backup.exists():
+            continue
+        target = root / relative
+        try:
+            if not target.is_file() or backup.read_bytes() != target.read_bytes():
+                return {
+                    "status": "PARKED",
+                    "reason": f"stale backup without matching owner file: {relative}",
+                }
+        except OSError:
+            return {"status": "PARKED", "reason": f"backup unreadable: {relative}"}
     backup_root.mkdir(parents=True, exist_ok=True)
     backup_manifest: dict[str, str] = {}
     for path in existing:
@@ -138,6 +227,17 @@ def _rollback_generated_targets(
     restored: list[str] = []
     removed: list[str] = []
     existing_set = set(existing)
+    if not _metadata_state_safe(root):
+        return restored, removed, "Gate state leaves the Git directory"
+    for target in targets:
+        relative = target.relative_to(root)
+        backup = backup_root / relative
+        if not _contained_file(root, target):
+            return restored, removed, f"unsafe restore path for {relative}"
+        if target in existing_set and (
+            backup.is_symlink() or not _contained_file(git_dir(root), backup)
+        ):
+            return restored, removed, f"unsafe backup path for {relative}"
     try:
         for target in targets:
             relative = target.relative_to(root)
@@ -156,34 +256,59 @@ def _rollback_generated_targets(
 
 
 def uninstall(root: Path) -> dict[str, Any]:
+    if not _metadata_state_safe(root):
+        return {"status": "PARKED", "reason": "Gate state leaves the Git directory"}
     manifest_path = _manifest_path_for_read(root)
+    if manifest_path != _install_manifest_path(root) and not _contained_file(root, manifest_path):
+        return {"status": "PARKED", "reason": "legacy manifest path leaves the repository"}
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {"status": "NOT_CONFIGURED", "reason": "no install manifest"}
     backup_root = git_dir(root) / "hermes-gate" / "install-backup"
     files = manifest.get("files")
-    if not isinstance(files, dict):
+    if not isinstance(files, dict) or set(files) != INTEGRATION_FILES:
         return {"status": "NOT_CONFIGURED", "reason": "malformed install manifest"}
+    recorded_backups = manifest.get("backups", {})
+    if (not isinstance(recorded_backups, dict)
+            or any(key not in files or not isinstance(value, str)
+                   for key, value in recorded_backups.items())):
+        return {"status": "NOT_CONFIGURED", "reason": "malformed install backups"}
 
     # Never restore/remove an early target before proving that every generated
     # target is still the exact installed byte sequence.  A later local edit
     # must park the entire rollback, not leave a partially restored integration.
     planned: list[tuple[str, Path, Path]] = []
     for relative, installed_sha in files.items():
-        if not isinstance(relative, str) or not isinstance(installed_sha, str):
+        if (not isinstance(relative, str) or relative not in INTEGRATION_FILES
+                or not isinstance(installed_sha, str)):
             return {"status": "NOT_CONFIGURED", "reason": "malformed install manifest"}
         target = root / relative
-        try:
-            target.relative_to(root)
-        except ValueError:
-            return {"status": "NOT_CONFIGURED", "reason": "malformed install manifest"}
+        backup = backup_root / relative
+        if not _contained_file(root, target):
+            return {"status": "PARKED", "reason": f"unsafe installed path: {relative}"}
+        if backup.is_symlink() or not _contained_file(git_dir(root), backup):
+            return {"status": "PARKED", "reason": f"unsafe backup path: {relative}"}
         if target.exists() and hashlib.sha256(target.read_bytes()).hexdigest() != installed_sha:
             return {
                 "status": "PARKED",
                 "reason": f"installed file changed: {relative}; preserve it manually",
             }
-        planned.append((relative, target, backup_root / relative))
+        planned.append((relative, target, backup))
+
+    # An owner backup is an obligation, not an optional hint. Validate every one
+    # before restoring or removing any generated file.
+    for relative, _target, backup in planned:
+        expected = recorded_backups.get(relative)
+        if expected is None:
+            if backup.exists():
+                return {"status": "PARKED", "reason": f"unrecorded backup: {relative}"}
+            continue
+        try:
+            if not backup.is_file() or hashlib.sha256(backup.read_bytes()).hexdigest() != expected:
+                return {"status": "PARKED", "reason": f"backup changed: {relative}"}
+        except OSError:
+            return {"status": "PARKED", "reason": f"backup unreadable: {relative}"}
 
     restored: list[str] = []
     removed: list[str] = []
@@ -196,11 +321,28 @@ def uninstall(root: Path) -> dict[str, Any]:
             target.unlink()
             removed.append(relative)
     manifest_path.unlink(missing_ok=True)
+    # The owner bytes are back in the checkout. These copies are no longer an
+    # install obligation; leaving them would poison a later fresh install.
+    try:
+        for relative, _target, backup in planned:
+            if relative in recorded_backups:
+                backup.unlink()
+    except OSError as exc:
+        return {
+            "status": "ERROR",
+            "reason": f"integration restored but backup cleanup failed: {exc}",
+            "restored": restored,
+            "removed": removed,
+        }
     return {"status": "PASS", "restored": restored, "removed": removed}
 
 
 def verify_runner(root: Path) -> tuple[bool, str]:
+    if not _metadata_state_safe(root):
+        return False, "Gate state leaves the Git directory"
     manifest_path = _manifest_path_for_read(root)
+    if manifest_path != _install_manifest_path(root) and not _contained_file(root, manifest_path):
+        return False, "legacy manifest path leaves the repository"
     runner = root / ".hermes" / "hermes_gate_runner.py"
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

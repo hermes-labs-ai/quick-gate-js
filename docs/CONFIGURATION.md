@@ -124,6 +124,25 @@ acceptance. Keyword inference cannot silently suppress them. Recognized categori
 still obey the configured material-category policy; explicit `style` and `documentation`
 remain nonmaterial by default. The typed JSONL review contract is unchanged.
 
+Forced initialization and uninstall preflight the physical locations of all generated
+integration files and Git metadata backups. In-repository file symlinks still work;
+external, dangling or looping targets and outside-repository directory aliases park
+the operation before backup, overwrite or restore. A malformed install manifest
+cannot add arbitrary paths to the uninstall set.
+An install backup promised by the manifest must still exist with its recorded bytes;
+missing, altered or unrecorded backups park uninstall before any file is restored or
+removed. The Gate state directory itself must remain inside the checkout's actual
+Git directory, including for linked worktrees. Its manifest, baseline and backup-root
+paths are checked even when installation has no existing files.
+An installed v1 manifest must name all three generated files. Repeating `init --force`
+over an enrolled repository parks to preserve the first installation's backups;
+first-time force over owner files remains supported.
+Successful uninstall restores owner files, removes their recorded backup copies and
+revokes the install manifest. A later fresh install therefore remains reversible.
+If an older install or interrupted rollback left a backup, initialization accepts it
+only when the corresponding owner file still exists with identical bytes. A backup
+without that file, or with different bytes, parks until the owner resolves it.
+
 ### Hook command scope
 
 PreToolUse recognizes literal `git commit`, `git push`, `gh pr create` and `gh pr ready`
