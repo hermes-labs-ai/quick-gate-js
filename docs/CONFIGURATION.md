@@ -118,6 +118,12 @@ configuration to its snapshot and supports Unicode/space/newline file names.
 or local models according to its installed provider. Existing strict profiles and
 owner instructions can independently require review; do not silently weaken them.
 
+CodeRabbit can omit a finding's category. Findings at a configured material severity
+whose category cannot be recognized remain visible as `unclassified` and block review
+acceptance. Keyword inference cannot silently suppress them. Recognized categories
+still obey the configured material-category policy; explicit `style` and `documentation`
+remain nonmaterial by default. The typed JSONL review contract is unchanged.
+
 ### Hook command scope
 
 PreToolUse recognizes literal `git commit`, `git push`, `gh pr create` and `gh pr ready`

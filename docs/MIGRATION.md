@@ -30,6 +30,11 @@ Full now executes file-driven stages over all included inputs. A mutating check
 that previously passed now returns ERROR through the legacy API and FAIL through
 `run`. All-skipped JS evaluation is ERROR. JS shell permission now enters config
 identity. Review failures/config changes cannot silently reuse previous evidence.
+Unclassified CodeRabbit findings at a selected material severity now block acceptance
+instead of being silently suppressed. Explicit recognized nonmaterial categories and
+the typed JSONL contract keep their existing policy. Rerun receipts after upgrading:
+the normalizer's bytes are part of the executing-core binding, even for checks that
+never invoke review.
 
 Do not run `init --force` merely to upgrade. Existing profiles/CI remain valid; adopt
 new generated CI, portable JS command detection and policy keys through a reviewed

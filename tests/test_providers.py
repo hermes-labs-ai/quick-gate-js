@@ -100,6 +100,42 @@ def test_actual_cli_parameterization_finding_is_material_security() -> None:
     assert result.findings[0].path == "storage.py"
 
 
+def test_actual_unclassified_major_finding_cannot_be_silently_suppressed() -> None:
+    result = normalize_coderabbit_output(payload("coderabbit_unclassified_major.json"))
+
+    assert result.status == "FAIL"
+    assert result.suppressed_count == 0
+    assert result.findings[0].category == "unclassified"
+    assert result.findings[0].path == ".github/actions/kwik-e-gate/run.py"
+    assert "tempfile.gettempdir()" in result.findings[0].message
+
+
+def test_unclassified_findings_respect_severity_and_explicit_category_policy() -> None:
+    for finding, expected in (
+        ({"severity": "critical"}, "FAIL"),
+        ({"severity": "major", "category": "provider-new-category"}, "FAIL"),
+        ({"severity": "minor"}, "PASS"),
+        ({"severity": "major", "category": "style"}, "PASS"),
+        ({"severity": "major", "category": "documentation"}, "PASS"),
+    ):
+        result = normalize_coderabbit_output([
+            {"type": "finding", "message": "rename the local", **finding},
+            {"type": "complete"},
+        ])
+        assert result.status == expected
+    result = normalize_coderabbit_output([
+        {"type": "finding", "severity": "major", "message": "unclassified advice"},
+        {"type": "complete"},
+    ], material_severities=["critical"])
+    assert result.status == "PASS"
+    result = normalize_coderabbit_output([
+        {"type": "finding", "severity": "major", "category": "security",
+         "message": "provider finding"},
+        {"type": "complete"},
+    ], material_categories=["correctness"])
+    assert result.status == "PASS"
+
+
 def test_jsonl_review_requires_exact_scope_and_accounts_for_findings() -> None:
     events = "\n".join(
         json.dumps(item)

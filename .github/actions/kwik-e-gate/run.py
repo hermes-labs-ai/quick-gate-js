@@ -13,7 +13,7 @@ from pathlib import Path
 SOURCE = Path(__file__).resolve().parents[3] / "src"
 sys.path.insert(0, str(SOURCE))
 
-def _bootstrap_failure(reason: str, export: Path) -> dict:
+def _bootstrap_failure(reason: str, export: Path | None) -> dict:
     timestamp = datetime.now(timezone.utc).isoformat()
     receipt = {
         "schema": "hermes-gate/receipt-v1",
@@ -29,6 +29,8 @@ def _bootstrap_failure(reason: str, export: Path) -> dict:
     exported = False
     try:
         # Bootstrap failure evidence is never reusable as a checked PASS.
+        if export is None:
+            raise OSError("receipt export path is unavailable")
         directory = Path(os.environ.get("KWIK_GATE_DIRECTORY", ".")).resolve(strict=True)
         if not directory.is_dir():
             raise OSError("working directory must be an existing directory")
@@ -48,10 +50,12 @@ def _bootstrap_failure(reason: str, export: Path) -> dict:
 
 
 def main() -> int:
-    export = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir())) / (
-        f"kwik-e-gate-{uuid.uuid4().hex}.receipt.json"
-    )
+    export = None
     try:
+        runner_temp = os.environ.get("RUNNER_TEMP")
+        if runner_temp is None:
+            runner_temp = tempfile.gettempdir()
+        export = Path(runner_temp) / f"kwik-e-gate-{uuid.uuid4().hex}.receipt.json"
         if sys.version_info < (3, 11):
             raise RuntimeError("kwik-e-gate requires Python 3.11 or newer")
         if not all((SOURCE / "hermes_gate" / name).is_file()

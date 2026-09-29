@@ -865,3 +865,33 @@ The maintainer accepted the actual three-file correction with no material findin
 All 12 source Action cases pass locally on both Python 3.11.15 and 3.14.7, including
 the retained loop regression, new invalid-directory cases and valid directory alias.
 The final public head still needs fresh configured receipts and hosted checks.
+
+### Raw review evidence correction: temporary storage and classification
+
+At local head `fe5e689e2993375a99969f671bf4db572bdba9a8`, CodeRabbit's completed
+retry normalized to PASS but contained one suppressed **major** finding. Inspecting
+the raw event established a real bootstrap bug: `os.environ.get` eagerly evaluated
+`tempfile.gettempdir()` before the failure handler, even with valid `RUNNER_TEMP`.
+A broken system temporary directory could therefore prevent any receipt. The prior
+PASS and maintainer acceptance do not license this newly discovered failure.
+
+The normalizer already read `codegenInstructions`; its keyword classifier returned
+`other` and silently suppressed this uncategorized major finding. The actual finding
+is preserved in `tests/fixtures/coderabbit_unclassified_major.json`. Selected-severity
+unknown findings now remain visible as `unclassified` and block acceptance. Recognized
+material categories still follow the configured policy; explicit style/documentation
+suppression and the typed JSONL contract survive. The bundled plugin stays byte-identical.
+
+Action export selection is now lazy and inside the bootstrap handler. No export path
+exists until selection succeeds. A failure to discover a system temp directory emits
+stdout FAIL and an empty Action receipt path without retrying discovery; a valid
+`RUNNER_TEMP` never consults the broken fallback. Four new regressions failed before
+the patch. Focused Action/provider/plugin cases passed on Python 3.11, and Action/provider
+cases passed on Python 3.14. Fresh completed-diff review and boundary receipts remain
+required after the correction.
+
+The maintainer explicitly caught the provenance consequence: `providers.py` enters
+every executing-core binding. The five prior consumer receipts become historical
+evidence even though those checks never invoke semantic review. Refresh all five
+before claiming current-core verification; no weakened binding or relabeled receipt
+can substitute. This is regression mindfulness applied to review evidence itself.

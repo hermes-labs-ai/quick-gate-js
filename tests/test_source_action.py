@@ -105,3 +105,44 @@ def test_action_bootstrap_failure_is_receipted(tmp_path: Path, case: str) -> Non
         export = Path(result["export_path"])
         assert json.loads(export.read_text()) == result["receipt"]
         assert f"receipt-path={export}\n" in output.read_text()
+
+
+@pytest.mark.parametrize("runner_temp_present", [True, False])
+def test_action_temp_selection_failure_is_receipted(
+    tmp_path: Path, runner_temp_present: bool,
+) -> None:
+    repo = tmp_path / "consumer"
+    repo.mkdir()
+    output = tmp_path / "outputs"
+    env = dict(os.environ, GITHUB_OUTPUT=str(output),
+               KWIK_GATE_DIRECTORY=str(repo), KWIK_GATE_MODE="full")
+    env.pop("RUNNER_TEMP", None)
+    if runner_temp_present:
+        env["RUNNER_TEMP"] = str(tmp_path)
+    code = """import runpy, sys, tempfile
+def unavailable_temp():
+    raise FileNotFoundError('no usable system temporary directory')
+tempfile.gettempdir = unavailable_temp
+sys.version_info = (3, 10, 0)
+runpy.run_path(sys.argv[1], run_name='__main__')
+"""
+    process = subprocess.run(
+        [sys.executable, "-I", "-c", code, str(SCRIPT)], cwd=repo, env=env,
+        capture_output=True, text=True, timeout=30, check=False,
+    )
+    result = json.loads(process.stdout)
+    assert process.returncode == 1
+    assert result["status"] == result["receipt"]["status"] == "FAIL"
+    assert result["receipt"]["reason_code"] == "ACTION_BOOTSTRAP_ERROR"
+    assert "binding" not in result["receipt"]
+    assert "status=FAIL\n" in output.read_text()
+    if runner_temp_present:
+        # The host-provided directory must avoid consulting broken system defaults.
+        assert "requires Python 3.11" in result["reason"]
+        export = Path(result["export_path"])
+        assert json.loads(export.read_text()) == result["receipt"]
+        assert f"receipt-path={export}\n" in output.read_text()
+    else:
+        assert "no usable system temporary directory" in result["reason"]
+        assert result["export_path"] is None
+        assert "receipt-path=\n" in output.read_text()

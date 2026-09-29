@@ -15,6 +15,7 @@ MATERIAL_CATEGORIES = {
     "api-contract",
 }
 MATERIAL_SEVERITIES = {"critical", "major"}
+NONMATERIAL_CATEGORIES = {"style", "documentation"}
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,11 @@ def normalize_coderabbit_output(
             or "CodeRabbit finding"
         )
         category = _category(event, message)
-        material = severity in severities and category in categories
+        # CLI findings can omit category. Unclassified selected-severity findings
+        # need a disposition; vocabulary inference must not silently turn them green.
+        material = severity in severities and (
+            category in categories or category == "unclassified"
+        )
         if not material:
             suppressed += 1
             continue
@@ -161,7 +166,7 @@ def normalize_jsonl_output(
 
 def _category(event: dict[str, Any], message: str) -> str:
     raw = str(event.get("category") or event.get("typeName") or "").lower().replace("_", "-")
-    if raw in MATERIAL_CATEGORIES:
+    if raw in MATERIAL_CATEGORIES | NONMATERIAL_CATEGORIES:
         return raw
     text = f"{raw} {message}".lower()
     mapping = (
@@ -186,4 +191,4 @@ def _category(event: dict[str, Any], message: str) -> str:
     for category, needles in mapping:
         if any(needle in text for needle in needles):
             return category
-    return "other"
+    return "unclassified"

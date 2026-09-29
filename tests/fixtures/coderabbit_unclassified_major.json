@@ -1,0 +1,2 @@
+{"type":"finding","severity":"major","fileName":".github/actions/kwik-e-gate/run.py","codegenInstructions":"Update the temporary-directory selection in the bootstrap flow so tempfile.gettempdir() is evaluated only when RUNNER_TEMP is absent, and ensure any directory-selection failure is handled by the bootstrap FAIL path that emits the JSON receipt and status output.","suggestions":[]}
+{"type":"complete"}
